@@ -46,6 +46,7 @@ class ConsoleListener(stdIn: BufferedReader) extends Actor with ActorLogging {
         }
         case m => {
           log.info(s"unknown message $m")
+          context.become(consoleListening)
         }
       }
     }
@@ -71,6 +72,7 @@ class ConsoleListener(stdIn: BufferedReader) extends Actor with ActorLogging {
 
   def registered(ar: ActorRef): Receive = {
     case ListenForChatMessages => {
+      println("type the messages fo ryour buddies!")
       implicit val timeout = Timeout(3.seconds)
       val msgCreatorFuture = context.system.actorSelection("user/mainActor/messageCreator").resolveOne(3.seconds)
       val msgCreator = Await.result(msgCreatorFuture, 3.seconds).asInstanceOf[ActorRef]

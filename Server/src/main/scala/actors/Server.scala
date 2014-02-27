@@ -31,30 +31,39 @@ class Server extends Actor with ActorLogging {
 
   def listening(regUsers: RegisteredUsers): Receive = {
 
+    case CreateActor(clientSocket) => {
+      val client = context.system.actorOf(Props(new Client(clientSocket)))
+    }
+
     case Register(name) => {
       log.info("server got Register("+ name +")")
       val user = regUsers.getList.find(ar => ar.path.name == name)
       user match {
         case None => {
           // register new user, send it's ref back
-          println(s"User doesn't exists. Registering $name...")
-          val client = context.actorOf(Props[Client], name=name)
-          context.become(listening(regUsers.registered(client)))
-          sender ! UserCreated(client)
+          log.info(s"User doesn't exists. Registering $name...")
+          context.become(listening(regUsers.registered(sender)))
+          sender ! UserCreated
         }
-        case ar: Option[ActorRef] => {
+        case Some(ar) => {
           // send answer that user exists
           sender ! UserExists
         }
       }
 
     }
-    case Login =>
+
+    case ForwardAll(bytes: Array[Byte]) => {
+      val buddies = context.children.filterNot(ar => ar == sender)
+      buddies.foreach(b => b ! Message(bytes))
+    }
+
+    case Login => {
+
+    }
 
     case m => {
-      println(s"Server got msg: $m")
-      println("Forwarding it to client...")
-      context.children.find(ar => ar.path.name == "client").get forward m
+      log.info(s"Server got unknown message: $m")
     }
   }
 }
