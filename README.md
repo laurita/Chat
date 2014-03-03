@@ -8,11 +8,11 @@ Server
 
 A server side of the application.
 
-sbt run-main ChatServerApp <server_port>
+sbt run-main ChatServerApp 'server_port'
 
 NewClient
 ---------
 
 A client side of the appliction.
 
-sbt run-main NewClientApp <server_host> <server_port>
+sbt run-main NewClientApp 'server_host' 'server_port'
