@@ -7,7 +7,6 @@ import java.io.{BufferedInputStream, DataInputStream, BufferedOutputStream, Data
 import main.scala.messages.Messages.ForwardAll
 import main.scala.messages.Messages.Message
 import main.scala.messages.Messages.Parse
-import main.scala.messages.Messages.Register
 
 object Client{
 
@@ -16,8 +15,7 @@ object Client{
 class Client(clientSocket: Socket) extends Actor with ActorLogging {
 
   val commandCodes = Map(
-    "register" -> 1.toByte,
-    "login" -> 2.toByte,
+    "login" -> 1.toByte,
     "send" -> 3.toByte,
     "logout" -> 4.toByte,
     "receive" -> 5.toByte
@@ -50,13 +48,13 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
       log.info(s"$self received Parse($command, $message) when notLoggedIn")
 
       command match {
-        // register
+        // login
         case 1 => {
           log.info(s"matched command $command")
           val username = byteArrayToString(message)
           val server = context.parent
-          log.info(s"sending Register($username) to $server")
-          server ! Register(username)
+          log.info(s"sending Login($username) to $server")
+          server ! Login(username)
         }
 
         // send
@@ -97,9 +95,9 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
       log.info(s"Client $self got message Parse($command, $lst)")
       log.info("message length is "+ message.length)
       command match {
-        // register
+        // login
         case 1 => {
-          // already registered
+          // already logged in
           log.info("already logged in")
         }
 

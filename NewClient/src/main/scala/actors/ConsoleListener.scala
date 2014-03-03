@@ -6,19 +6,13 @@ import java.io.{InputStreamReader, BufferedReader}
 import akka.util.Timeout
 import scala.concurrent.duration._
 import scala.concurrent.Await
-import messages.Messages.UserRegistered
+import messages.Messages.UserLoggedIn
 import messages.Messages.ConsoleListening
 import messages.Messages.Username
 
-/**
- * Created by laura on 25/02/14.
- */
-
 class ConsoleListener(stdIn: BufferedReader) extends Actor with ActorLogging {
 
-  def receive: Receive = consoleDeaf
-
-  def consoleDeaf: Receive = {
+  def receive: Receive = {
     case ConsoleListen => {
       log.info("ConsoleListener got ConsoleListen")
       context.become(consoleListening)
@@ -32,12 +26,6 @@ class ConsoleListener(stdIn: BufferedReader) extends Actor with ActorLogging {
       printWelcome()
       val input = stdIn.readLine()
       input match {
-        case "register" => {
-          println("username")
-          context.become(waitUsernameToRegister)
-          val username = stdIn.readLine()
-          self ! Username(username)
-        }
         case "login" => {
           println("username")
           context.become(waitUsernameToLogin)
@@ -45,31 +33,38 @@ class ConsoleListener(stdIn: BufferedReader) extends Actor with ActorLogging {
           self ! Username(username)
         }
         case m => {
-          log.info(s"unknown message $m")
+          log.info(s"ConsoleListener received unknown message $m in consoleListening mode")
           context.become(consoleListening)
         }
       }
     }
   }
 
-  def waitUsernameToRegister: Receive = {
+  def waitUsernameToLogin: Receive = {
     case Username(user) => {
-      implicit val timeout = Timeout(3.seconds)
-      val msgCreatorFuture = context.system.actorSelection("user/mainActor/messageCreator").resolveOne(3.seconds)
-      val msgCreator = Await.result(msgCreatorFuture, 3.seconds)
-      msgCreator ! CreateMessage("register", user)
+      val msgCreator = context.system.actorSelection("user/mainActor/messageCreator")
+      context.become(waitLoginConfirmation)
+      msgCreator ! CreateMessage("login", user)
     }
-    case UserRegistered(ar) => {
-      log.info("actor "+ ar + " registered")
-      context.become(registered(ar))
+
+  }
+
+  def waitLoginConfirmation: Receive = {
+    case UserLoggedIn(ar) => {
+      log.info(s"$ar logged in")
+      context.become(loggedIn(ar))
       self ! ListenForChatMessages
     }
   }
 
-  def registered(ar: ActorRef): Receive = {
+  def loggedIn(ar: ActorRef): Receive = {
     case ListenForChatMessages => {
-      println("type the messages for your buddies!")
+      println("Type messages for your buddies!")
       val msgCreator = context.system.actorSelection("user/mainActor/messageCreator")
+
+      // start listening for messages
+      val sl = context.system.actorSelection("user/mainActor/socketListener")
+      sl ! ListenForChatMessages
 
       var line = stdIn.readLine()
       while (line != "logout") {
@@ -83,25 +78,14 @@ class ConsoleListener(stdIn: BufferedReader) extends Actor with ActorLogging {
     }
 
     case UserLoggedOut(ar: ActorRef) => {
-      println("You have been logged out! Type register to login again.")
+      println("You have been logged out! Type login to login again.")
       context.become(consoleListening)
       self ! ConsoleListening
     }
   }
 
-  def waitUsernameToLogin: Receive = {
-    case Username(user) => {
-
-      implicit val timeout = Timeout(3.seconds)
-      val msgCreatorFuture = context.system.actorSelection("user/mainActor/messageCreator").resolveOne(3.seconds)
-      val msgCreator = Await.result(msgCreatorFuture, 3.seconds)
-      msgCreator ! CreateMessage("register", user)
-
-    }
-  }
-
   private def printWelcome() {
     println("Welcome to chat!")
-    println("Type 'register'")
+    println("Type 'login'")
   }
 }

@@ -3,7 +3,7 @@ package actors
 import akka.actor.{Props, ActorLogging, Actor}
 import java.io.DataInputStream
 import messages.Messages._
-import messages.Messages.UserRegistered
+import messages.Messages.UserLoggedIn
 import messages.Messages.ACK
 import messages.Messages.WaitForACK
 
@@ -40,7 +40,7 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
       val ackCmdByte = newByteArray(0)
       if (cmdByte == ackCmdByte && newByteArray(1) == SocketListener.Success) {
         cmdByte match {
-          // register
+          // login
           case 1 => {
             val cl = context.system.actorSelection("user/mainActor/consoleListener")
 
@@ -49,7 +49,7 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
 
             log.info(s"user $user created")
 
-            cl ! UserRegistered(user)
+            cl ! UserLoggedIn(user)
             context.become(waitingForChatMessages)
           }
 
@@ -94,6 +94,7 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
 
       self ! ListenForChatMessages
     }
+
 
     case WaitForACK(bytes) => {
       val lst = bytes.toList

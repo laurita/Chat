@@ -3,50 +3,40 @@ package main.scala.actors
 import akka.actor._
 import main.scala.messages.Messages._
 import main.scala.messages.Messages.Login
-import main.scala.messages.Messages.Register
-import scala.collection.immutable.HashMap
-import scala.Option
 import java.io.DataOutputStream
 
-/**
- * Created by laura on 24/02/14.
- */
 object Server {
-
-
-
 
 }
 
 class Server extends Actor with ActorLogging {
 
   val commandCodes = Map(
-    "register" -> 1.toByte,
-    "login" -> 2.toByte,
+    "login" -> 1.toByte,
     "send" -> 3.toByte,
     "logout" -> 4.toByte,
     "receive" -> 5.toByte
   )
 
-  case class RegisteredUsers(urList: List[ActorRef]) {
+  case class LoggedInUsers(urList: List[ActorRef]) {
 
     private val userList = urList
 
     def getList = userList
 
-    def registered(usr: ActorRef) = {
-      RegisteredUsers(usr :: userList)
+    def login(usr: ActorRef) = {
+      LoggedInUsers(usr :: userList)
     }
 
     def logout(usr: ActorRef) = {
       val usersWithout = userList.filter(x => !x.equals(usr))
-      RegisteredUsers(usersWithout)
+      LoggedInUsers(usersWithout)
     }
   }
 
-  override def receive: Receive = listening(new RegisteredUsers(List[ActorRef]()))
+  override def receive: Receive = listening(new LoggedInUsers(List[ActorRef]()))
 
-  def listening(regUsers: RegisteredUsers): Receive = {
+  def listening(loggedInUsers: LoggedInUsers): Receive = {
 
     case CreateActor(clientSocket) => {
       log.info("Server got CreateActor message")
@@ -54,14 +44,14 @@ class Server extends Actor with ActorLogging {
       log.info(s"$client created")
     }
 
-    case Register(name) => {
-      log.info(s"server got Register($name)")
-      val user = regUsers.getList.find(ar => ar.path.name == name)
+    case Login(name) => {
+      log.info(s"server got Login($name)")
+      val user = loggedInUsers.getList.find(ar => ar.path.name == name)
       user match {
         case None => {
-          // register new user, send it's ref back
-          log.info(s"User doesn't exists. Registering $name...")
-          context.become(listening(regUsers.registered(sender)))
+          // login new user, send it's ref back
+          log.info(s"User doesn't exists. Logging in $name...")
+          context.become(listening(loggedInUsers.login(sender)))
           sender ! UserCreated(name)
         }
         case Some(ar) => {
@@ -90,7 +80,7 @@ class Server extends Actor with ActorLogging {
 
     case Logout(name: String, out: DataOutputStream) => {
       log.info(s"Server got Logout($name)")
-      val newRegUsres = regUsers.logout(sender)
+      val newRegUsres = loggedInUsers.logout(sender)
       context.become(listening(newRegUsres))
 
       val ats = Array[Byte](4, 0.toByte)

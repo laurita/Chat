@@ -4,13 +4,11 @@ import akka.actor.{ActorLogging, ActorRef, Actor}
 import messages.Messages.{MessageWithByteArray, CreateMessage}
 import akka.util.Timeout
 import scala.concurrent.duration._
-import scala.concurrent.Await
 
 class MessageCreator extends Actor with ActorLogging {
 
   val commandCodes = Map(
-  "register" -> 1.toByte,
-  "login" -> 2.toByte,
+  "login" -> 1.toByte,
   "send" -> 3.toByte,
   "logout" -> 4.toByte
   )
@@ -20,18 +18,13 @@ class MessageCreator extends Actor with ActorLogging {
 
       log.info(s"MessageCreator received CreateMessage($command, $message)")
       implicit val timeout = Timeout(3.seconds)
-      val socketWriterFuture = context.system.actorSelection("user/mainActor/socketWriter").resolveOne(3.seconds)
-      val socketWriterRes = Await.result(socketWriterFuture, 3.seconds)
-
+      val socketWriter = context.system.actorSelection("user/mainActor/socketWriter")
 
       val msgByteArray =
         Array(commandCodes(command)) ++ intToByteArray(message.length) ++ message.getBytes("UTF-8")
 
-      socketWriterRes match {
-        case socketWriter: ActorRef => {
-          socketWriter ! MessageWithByteArray(msgByteArray)
-        }
-      }
+      // TODO: continue here
+      socketWriter ! MessageWithByteArray(msgByteArray)
 
     }
   }

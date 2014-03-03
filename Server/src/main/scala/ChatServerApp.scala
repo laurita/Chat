@@ -2,13 +2,9 @@ package main.scala
 
 import java.net._
 import java.io._
-import akka.actor.{ActorRef, Props, ActorSystem}
-import akka.pattern.ask
-import scala.concurrent.duration._
-import main.scala.actors.{Client, Server}
-import main.scala.messages.Messages.{CreateActor, Parse, UserCreated, Register}
-import scala.concurrent.Await
-import akka.util.Timeout
+import akka.actor.{Props, ActorSystem}
+import main.scala.actors.{Server}
+import main.scala.messages.Messages.{CreateActor}
 
 object ChatServerApp extends App {
 

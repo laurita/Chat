@@ -1,13 +1,8 @@
 package actors
 
 import akka.actor.{ActorLogging, Props, Actor}
-import messages.Messages.{MainStarted, MainStart}
+import messages.Messages.{ConsoleListen, MainStart}
 import java.io.{BufferedReader, DataOutputStream, DataInputStream}
-import java.net.Socket
-
-/**
- * Created by laura on 25/02/14.
- */
 
 class MainActor(in: DataInputStream, out: DataOutputStream, stdIn: BufferedReader) extends Actor with ActorLogging {
 
@@ -18,16 +13,17 @@ class MainActor(in: DataInputStream, out: DataOutputStream, stdIn: BufferedReade
       log.info("Start message received")
       createActors()
       context.become(started)
-      sender ! MainStarted()
+      val cl = context.system.actorSelection("user/mainActor/consoleListener")
+      cl ! ConsoleListen
     }
     case m =>  {
-      log.info(s"unknown message received: $m")
+      log.info(s"MainActor received unknown message $m in beforeStart mode")
     }
   }
 
   def started: Receive = {
 
-    case _ =>
+    case _ => log.info("MainActor shouldn't receive any messages in started mode")
   }
 
   def createActors() {

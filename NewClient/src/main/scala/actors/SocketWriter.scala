@@ -22,7 +22,7 @@ class SocketWriter(out: DataOutputStream) extends Actor with ActorLogging {
       val cmd = lst.head
 
       cmd match {
-        // register
+        // login
         case 1 => {
               sl ! WaitForACK(byteArray)
         }

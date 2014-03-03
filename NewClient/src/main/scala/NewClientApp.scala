@@ -1,16 +1,9 @@
 import actors.MainActor
 import akka.actor._
-import akka.util.Timeout
 import java.io._
 import java.net.Socket
-import messages.Messages.{ConsoleListen, MainStarted, MainStart}
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import akka.pattern.ask
+import messages.Messages.MainStart
 
-/**
- * Created by laura on 25/02/14.
- */
 object NewClientApp {
 
   def main(args: Array[String]) {
@@ -33,20 +26,7 @@ object NewClientApp {
     val system = ActorSystem("system")
     val mainActor = system.actorOf(Props(new MainActor(in, out, stdIn)), name="mainActor")
 
-    implicit val timeout = Timeout(3 seconds)
-    val startFuture = mainActor ? MainStart
-    val startResult = Await.result(startFuture, 3.seconds).asInstanceOf[MainStarted]
-
-    startResult match {
-      case MainStarted() => {
-        implicit val timeout = Timeout(3.seconds)
-        val consoleListenerFuture = system.actorSelection("user/mainActor/consoleListener").resolveOne()
-        val consoleListener = Await.result(consoleListenerFuture, 3.seconds)
-
-        consoleListener ! ConsoleListen
-      }
-    }
-
+    mainActor ! MainStart
   }
 
 }
