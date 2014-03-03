@@ -24,22 +24,15 @@ object ChatServerApp extends App {
 
   try {
 
-    println("Creating actor system...")
     val serverSystem = ActorSystem("system")
-
-    println("Creating server actor...")
     val serverActor = serverSystem.actorOf(Props[Server], name="server")
-
     val serverSocket = new ServerSocket(Integer.parseInt(portNumber))
 
-    println("Receiving input...")
+    println("Receiving input through socket...")
 
     while (true) {
       val clientSocket = serverSocket.accept()
-
       serverActor ! CreateActor(clientSocket)
-
-      //println("client is "+ client.path.name)
     }
 
   } catch {
@@ -49,15 +42,6 @@ object ChatServerApp extends App {
       println(e.getMessage)
       e.printStackTrace()
     }
-  }
-
-  @throws(classOf[IOException])
-  private def writeBytes(outputStream: DataOutputStream, cmd: Byte, errorCode: Byte) {
-    println("in writeBytes")
-    outputStream.writeByte(cmd)
-    outputStream.writeByte(errorCode)
-    println("writing "+ outputStream.size() +" bytes...")
-    outputStream.flush()
   }
 
   def closeAll(clientSocket: Socket, serverSocket: ServerSocket) {

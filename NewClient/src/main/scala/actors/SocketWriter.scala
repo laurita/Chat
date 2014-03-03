@@ -15,7 +15,7 @@ class SocketWriter(out: DataOutputStream) extends Actor with ActorLogging {
   def receive: Receive = {
     case MessageWithByteArray(byteArray) => {
       val lst = byteArray.toList
-      log.info(s"SocketWriter received MessageWithBytArray($lst)")
+      log.info(s"SocketWriter received MessageWithByteArray($lst)")
       implicit val timeout = Timeout(3.seconds)
       val socketListenerFuture = context.system.actorSelection("user/mainActor/socketListener").resolveOne(3.seconds)
       val socketListenerRes = Await.result(socketListenerFuture, 3.seconds).asInstanceOf[ActorRef]
@@ -43,8 +43,6 @@ class SocketWriter(out: DataOutputStream) extends Actor with ActorLogging {
           }
         }
       }
-
-
     }
   }
 

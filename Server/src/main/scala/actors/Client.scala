@@ -5,6 +5,8 @@ import main.scala.messages.Messages._
 import java.net.Socket
 import java.io.{BufferedInputStream, DataInputStream, BufferedOutputStream, DataOutputStream}
 import akka.pattern.ask
+import main.scala.messages.Messages.ForwardAll
+import main.scala.messages.Messages.Message
 import main.scala.messages.Messages.Parse
 import main.scala.messages.Messages.Register
 import scala.concurrent.Await
@@ -27,24 +29,21 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
     "receive" -> 5.toByte
   )
 
-  log.info(self.path.name + " listening...")
+  //log.info(self.path.name + " listening...")
   val out = new DataOutputStream(new BufferedOutputStream(clientSocket.getOutputStream))
   val in = new DataInputStream(
     new BufferedInputStream(clientSocket.getInputStream))
 
-  log.info("Receiving input...")
+  //log.info("Receiving input...")
 
   val cmd = in.readByte()
-  log.info(s"cmd $cmd")
   val lenBytes = new Array[Byte](4)
   in.read(lenBytes)
   val len = Integer.parseInt(lenBytes.map(a => toBinary(a.toInt, 8)).mkString, 2)
-  log.info(s"len $len")
   val bytes = new Array[Byte](len)
   in.read(bytes, 0, len)
   val lst = bytes.toList
-  log.info(s"bytes $lst")
-  log.info(s"cmdId: $cmd, length: $len, msg: $lst")
+  //log.info(s"cmdId: $cmd, length: $len, msg: $lst")
 
   self ! Parse(cmd, bytes)
 
@@ -54,25 +53,32 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
 
     case Parse(command, message) => {
 
+      log.info(s"$self received Parse($command, $message) when notLoggedIn")
+
       command match {
         // register
         case 1 => {
+          log.info(s"matched command $command")
           val username = byteArrayToString(message)
-
-          implicit val timeout = Timeout(5.seconds)
-          context.actorSelection("../server") ! Register(username)
+          val server = context.parent
+          log.info(s"sending Register($username) to $server")
+          server ! Register(username)
         }
 
         // send
         case 3 => {
+          log.info("Parse(3, ...) not implemented")
+        }
 
+        case c => {
+          log.info("unimplemented command "+ c)
         }
       }
 
     }
 
-    case UserCreated => {
-      context.become(loggedIn)
+    case UserCreated(name) => {
+      context.become(loggedIn(name))
 
       val ats = Array[Byte](cmd, 0.toByte)
       out.write(ats)
@@ -89,24 +95,25 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
     }
   }
 
-  def loggedIn: Receive = {
+  def loggedIn(name: String): Receive = {
 
     case Parse(command, message) => {
 
-      log.info(s"Client $self got message Parse($command, $message)")
+      val lst = message.toList
+      log.info(s"Client $self got message Parse($command, $lst)")
+      log.info("message length is "+ message.length)
       command match {
         // register
         case 1 => {
           // already registered
-          log.info("logged in")
+          log.info("already logged in")
         }
 
         // send
         case 3 => {
-          // TODO: forward message for all users
           log.info("forwarding to others...")
-          context.system.actorSelection("user/server") ! ForwardAll(message)
-          //context.system.actorSelection("user/*") ! byteArrayToString(message)
+          val from = name
+          context.system.actorSelection("user/server") ! ForwardAll(from, message)
         }
       }
 
@@ -130,21 +137,12 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
     }
 
     case Message(bytes: Array[Byte]) => {
-      log.info(s"Client $self got message: $bytes")
+      val lst = bytes.toList
+      log.info(s"Client $self got message: $lst")
+      log.info("message length is "+ bytes.length)
       log.info("Client is sending it through socket...")
 
-
-      val m = byteArrayToString(bytes)
-      val senderName = self.path.name
-
-      val msgByteArray =
-        Array(commandCodes("receive")) ++
-          intToByteArray(senderName.length) ++
-          senderName.getBytes("UTF-8") ++
-          intToByteArray(m.length) ++
-          m.getBytes("UTF-8")
-
-      out.write(msgByteArray)
+      out.write(bytes)
       out.flush()
     }
 

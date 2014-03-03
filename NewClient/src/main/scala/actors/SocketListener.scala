@@ -7,9 +7,6 @@ import akka.util.Timeout
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
-/**
- * Created by laura on 25/02/14.
- */
 object SocketListener {
   val Success: Byte = 0
 }
@@ -63,7 +60,7 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
     case ListenForChatMessages => {
       if (in.available() != 0) {
         val cmd = in.readByte()
-        val senderLenBytes = new Array[Byte](2)
+        val senderLenBytes = new Array[Byte](4)
         in.read(senderLenBytes)
         val senderLen = Integer.parseInt(senderLenBytes.map(a => toBinary(a.toInt, 8)).mkString, 2)
         val senderBytes = new Array[Byte](senderLen)
@@ -75,7 +72,7 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
         val bytes = new Array[Byte](len)
         in.read(bytes, 0, len)
         val lst = bytes.toList
-        println(s"cmdId: $cmd, senderLen: $senderLen, sender: $senderLst, length: $len, msg: $lst")
+        log.info(s"cmdId: $cmd, senderLen: $senderLen, sender: $senderLst, length: $len, msg: $lst")
 
         val senderName = byteArrayToString(senderBytes)
         val message = byteArrayToString(bytes)

@@ -2,14 +2,10 @@ package actors
 
 import akka.actor.{ActorLogging, ActorRef, Actor}
 import messages.Messages.{MessageWithByteArray, CreateMessage}
-import scala.collection.immutable.HashMap
 import akka.util.Timeout
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
-/**
- * Created by laura on 25/02/14.
- */
 class MessageCreator extends Actor with ActorLogging {
 
   val commandCodes = Map(
@@ -38,7 +34,6 @@ class MessageCreator extends Actor with ActorLogging {
       }
 
     }
-
   }
 
   private def intToByteArray(x: Int): Array[Byte] = {

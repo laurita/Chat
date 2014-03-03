@@ -12,9 +12,9 @@ object Messages {
   case class Parse(cmd: Byte, msg: Array[Byte])
   case class Register(name: String)
   case object UserExists
-  case object UserCreated
+  case class UserCreated(name: String)
   case class Login(name: String)
   case object Listen
-  case class ForwardAll(bytes: Array[Byte])
+  case class ForwardAll(from: String, bytes: Array[Byte])
   case class Message(bytes: Array[Byte])
 }

@@ -21,7 +21,6 @@ class ConsoleListener(stdIn: BufferedReader) extends Actor with ActorLogging {
   def consoleDeaf: Receive = {
     case ConsoleListen => {
       log.info("ConsoleListener got ConsoleListen")
-      //val stdIn = new BufferedReader(new InputStreamReader(System.in))
       context.become(consoleListening)
       self ! ConsoleListening
     }
@@ -72,10 +71,8 @@ class ConsoleListener(stdIn: BufferedReader) extends Actor with ActorLogging {
 
   def registered(ar: ActorRef): Receive = {
     case ListenForChatMessages => {
-      println("type the messages fo ryour buddies!")
-      implicit val timeout = Timeout(3.seconds)
-      val msgCreatorFuture = context.system.actorSelection("user/mainActor/messageCreator").resolveOne(3.seconds)
-      val msgCreator = Await.result(msgCreatorFuture, 3.seconds).asInstanceOf[ActorRef]
+      println("type the messages for your buddies!")
+      val msgCreator = context.system.actorSelection("user/mainActor/messageCreator")
 
       var line = stdIn.readLine()
       while (line != "logout") {

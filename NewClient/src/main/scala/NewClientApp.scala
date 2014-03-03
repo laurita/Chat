@@ -24,7 +24,6 @@ object NewClientApp {
     val port = args(1).toInt
 
     val socket = new Socket(host, port)
-    //socket.setTcpNoDelay(true)
 
     val out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream))
     val in = new DataInputStream(new BufferedInputStream(socket.getInputStream))
@@ -34,26 +33,27 @@ object NewClientApp {
     val system = ActorSystem("system")
     val mainActor = system.actorOf(Props(new MainActor(in, out, stdIn)), name="mainActor")
 
-    println("MainActor created")
-
     implicit val timeout = Timeout(3 seconds)
     val startFuture = mainActor ? MainStart
     val startResult = Await.result(startFuture, 3.seconds).asInstanceOf[MainStarted]
 
     startResult match {
       case MainStarted() => {
-        println("got MainStarted()")
         implicit val timeout = Timeout(3.seconds)
         val consoleListenerFuture = system.actorSelection("user/mainActor/consoleListener").resolveOne()
         val consoleListenerRes = Await.result(consoleListenerFuture, 3.seconds).asInstanceOf[ActorRef]
 
-        //println(consoleListenerRes)
         consoleListenerRes ! ConsoleListen
 
+        printWelcome()
       }
     }
 
+  }
 
+  def printWelcome() {
+    println("Welcome to chat!")
+    println("Type 'register'")
   }
 
 }
