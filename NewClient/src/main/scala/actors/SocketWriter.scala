@@ -7,18 +7,14 @@ import akka.util.Timeout
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
-/**
- * Created by laura on 25/02/14.
- */
 class SocketWriter(out: DataOutputStream) extends Actor with ActorLogging {
 
   def receive: Receive = {
     case MessageWithByteArray(byteArray) => {
       val lst = byteArray.toList
       log.info(s"SocketWriter received MessageWithByteArray($lst)")
-      implicit val timeout = Timeout(3.seconds)
-      val socketListenerFuture = context.system.actorSelection("user/mainActor/socketListener").resolveOne(3.seconds)
-      val socketListenerRes = Await.result(socketListenerFuture, 3.seconds).asInstanceOf[ActorRef]
+
+      val sl = context.system.actorSelection("user/mainActor/socketListener")
 
       out.write(byteArray)
       out.flush()
@@ -28,19 +24,18 @@ class SocketWriter(out: DataOutputStream) extends Actor with ActorLogging {
       cmd match {
         // register
         case 1 => {
-          socketListenerRes match {
-            case sl: ActorRef => {
               sl ! WaitForACK(byteArray)
-            }
-          }
         }
         // send
         case 3 => {
-          socketListenerRes match {
-            case sl: ActorRef => {
-              sl ! ListenForChatMessages
-            }
-          }
+          sl ! ListenForChatMessages
+        }
+
+        // logout
+        case 4 => {
+          log.info(s"SocketWriter matched $cmd")
+          log.info(s"SocketListener is: $sl")
+          sl ! WaitForACK(byteArray)
         }
       }
     }

@@ -4,17 +4,11 @@ import akka.actor.{ActorLogging, Actor}
 import main.scala.messages.Messages._
 import java.net.Socket
 import java.io.{BufferedInputStream, DataInputStream, BufferedOutputStream, DataOutputStream}
-import akka.pattern.ask
 import main.scala.messages.Messages.ForwardAll
 import main.scala.messages.Messages.Message
 import main.scala.messages.Messages.Parse
 import main.scala.messages.Messages.Register
-import scala.concurrent.Await
-import akka.util.Timeout
-import scala.concurrent.duration._
-/**
- * Created by laura on 24/02/14.
- */
+
 object Client{
 
 }
@@ -88,7 +82,7 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
     }
 
     case UserExists => {
-      // error code 1 is for user exists
+      // error code 1 is when user exists
       val ats = Array[Byte](cmd, 1.toByte)
       out.write(ats)
       out.flush()
@@ -114,6 +108,13 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
           log.info("forwarding to others...")
           val from = name
           context.system.actorSelection("user/server") ! ForwardAll(from, message)
+        }
+
+        // logout
+        case 4 => {
+          log.info(s"Client sends Server Logout($name)")
+          context.system.actorSelection("user/server") ! Logout(name, out)
+          context.become(notLoggedIn)
         }
       }
 
@@ -153,16 +154,6 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
 
   private def byteArrayToString(byteArray: Array[Byte]): String = {
     byteArray.toList.map(x => x.toChar).mkString
-  }
-
-  private def intToByteArray(x: Int): Array[Byte] = {
-
-    val binaryStr = x.toBinaryString
-    val pad = "0" * (32 - binaryStr.length)
-
-    val fullBinStr = pad + binaryStr
-
-    splitToStringsOfLen(fullBinStr, 8).map(x => Integer.parseInt(x, 2).toByte).toArray
   }
 
   private def splitToStringsOfLen(str: String, len: Int): List[String] = {

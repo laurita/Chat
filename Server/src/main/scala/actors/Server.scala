@@ -6,6 +6,7 @@ import main.scala.messages.Messages.Login
 import main.scala.messages.Messages.Register
 import scala.collection.immutable.HashMap
 import scala.Option
+import java.io.DataOutputStream
 
 /**
  * Created by laura on 24/02/14.
@@ -35,6 +36,11 @@ class Server extends Actor with ActorLogging {
 
     def registered(usr: ActorRef) = {
       RegisteredUsers(usr :: userList)
+    }
+
+    def logout(usr: ActorRef) = {
+      val usersWithout = userList.filter(x => !x.equals(usr))
+      RegisteredUsers(usersWithout)
     }
   }
 
@@ -80,6 +86,19 @@ class Server extends Actor with ActorLogging {
 
       val buddies = context.children.filterNot(ar => ar == sender)
       buddies.foreach(b => b ! Message(msgByteArray))
+    }
+
+    case Logout(name: String, out: DataOutputStream) => {
+      log.info(s"Server got Logout($name)")
+      val newRegUsres = regUsers.logout(sender)
+      context.become(listening(newRegUsres))
+
+      val ats = Array[Byte](4, 0.toByte)
+      out.write(ats)
+      out.flush()
+
+      // close the socket
+      out.close()
     }
 
     case Login => {

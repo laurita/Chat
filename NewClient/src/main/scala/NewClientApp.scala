@@ -41,19 +41,12 @@ object NewClientApp {
       case MainStarted() => {
         implicit val timeout = Timeout(3.seconds)
         val consoleListenerFuture = system.actorSelection("user/mainActor/consoleListener").resolveOne()
-        val consoleListenerRes = Await.result(consoleListenerFuture, 3.seconds).asInstanceOf[ActorRef]
+        val consoleListener = Await.result(consoleListenerFuture, 3.seconds)
 
-        consoleListenerRes ! ConsoleListen
-
-        printWelcome()
+        consoleListener ! ConsoleListen
       }
     }
 
-  }
-
-  def printWelcome() {
-    println("Welcome to chat!")
-    println("Type 'register'")
   }
 
 }

@@ -14,6 +14,7 @@ object Messages {
   case class Username(user: String)
   case class CreateMessage(command: String, username: String)
   case class UserRegistered(ar: ActorRef)
+  case class UserLoggedOut(ar: ActorRef)
   case class MessageWithByteArray(msg: Array[Byte]) {
     private val message = msg
     def getArray = message

@@ -29,6 +29,7 @@ class ConsoleListener(stdIn: BufferedReader) extends Actor with ActorLogging {
   def consoleListening: Receive = {
     case ConsoleListening => {
       log.info("ConsoleListener got ConsoleListening")
+      printWelcome()
       val input = stdIn.readLine()
       input match {
         case "register" => {
@@ -55,12 +56,8 @@ class ConsoleListener(stdIn: BufferedReader) extends Actor with ActorLogging {
     case Username(user) => {
       implicit val timeout = Timeout(3.seconds)
       val msgCreatorFuture = context.system.actorSelection("user/mainActor/messageCreator").resolveOne(3.seconds)
-      val msgCreatorRes = Await.result(msgCreatorFuture, 3.seconds).asInstanceOf[ActorRef]
-      msgCreatorRes match {
-        case msgCreator: ActorRef => {
-          msgCreator ! CreateMessage("register", user)
-        }
-      }
+      val msgCreator = Await.result(msgCreatorFuture, 3.seconds)
+      msgCreator ! CreateMessage("register", user)
     }
     case UserRegistered(ar) => {
       log.info("actor "+ ar + " registered")
@@ -84,6 +81,12 @@ class ConsoleListener(stdIn: BufferedReader) extends Actor with ActorLogging {
         msgCreator ! CreateMessage("logout", ar.path.name)
       }
     }
+
+    case UserLoggedOut(ar: ActorRef) => {
+      println("You have been logged out! Type register to login again.")
+      context.become(consoleListening)
+      self ! ConsoleListening
+    }
   }
 
   def waitUsernameToLogin: Receive = {
@@ -91,12 +94,14 @@ class ConsoleListener(stdIn: BufferedReader) extends Actor with ActorLogging {
 
       implicit val timeout = Timeout(3.seconds)
       val msgCreatorFuture = context.system.actorSelection("user/mainActor/messageCreator").resolveOne(3.seconds)
-      val msgCreatorRes = Await.result(msgCreatorFuture, 3.seconds).asInstanceOf[ActorRef]
-      msgCreatorRes match {
-        case msgCreator: ActorRef => {
-          msgCreator ! CreateMessage("register", user)
-        }
-      }
+      val msgCreator = Await.result(msgCreatorFuture, 3.seconds)
+      msgCreator ! CreateMessage("register", user)
+
     }
+  }
+
+  private def printWelcome() {
+    println("Welcome to chat!")
+    println("Type 'register'")
   }
 }
