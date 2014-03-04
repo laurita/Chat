@@ -22,6 +22,6 @@ WebSocketClient
 
 An HTTP client using Socko and Web sockets.
 
-sbt run-main WebSocketClientApp
+sbt run-main WebSocketClientApp 'server_host' 'server_port'
 
 Go to your browser and open 'http://localhost:8888'
