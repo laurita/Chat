@@ -4,7 +4,7 @@ import java.io._
 import java.net.Socket
 import messages.Messages.MainStart
 
-object NewClientApp {
+object CmdLineClientApp {
 
   def main(args: Array[String]) {
 

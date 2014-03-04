@@ -15,4 +15,4 @@ NewClient
 
 A client side of the appliction.
 
-sbt run-main NewClientApp 'server_host' 'server_port'
+sbt run-main CmdLineClientApp 'server_host' 'server_port'

@@ -1,4 +1,4 @@
-name := "NewClient"
+name := "CmdLineClient"
 
 version := "1.0"
 
