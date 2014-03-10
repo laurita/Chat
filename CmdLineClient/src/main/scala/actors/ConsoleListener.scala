@@ -34,7 +34,8 @@ class ConsoleListener(stdIn: BufferedReader) extends Actor with ActorLogging {
         }
         case m => {
           log.info(s"ConsoleListener received unknown message $m in consoleListening mode")
-          context.become(consoleListening)
+          //context.become(consoleListening)
+          self ! ConsoleListening
         }
       }
     }
