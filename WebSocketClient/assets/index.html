@@ -1,0 +1,86 @@
+<html>
+<head>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+    <title>Socko Web Socket Example</title>
+</head>
+<body>
+<script type="text/javascript">
+    var socket;
+    if (!window.WebSocket) {
+        window.WebSocket = window.MozWebSocket;
+    }
+
+    if (window.WebSocket) {
+        socket = new WebSocket("ws://localhost:8888/websocket/");
+
+        socket.onmessage = function(event) {
+            var object = jQuery.parseJSON(event.data);
+            if (object.action == "login") {
+                var loggedIn = object.params.success;
+                if (loggedIn) {
+                    var ta = document.getElementById('responseText');
+                    ta.value = ta.value + '\n' + "You are logged in!"
+                    socket.onmessage = function(ev) {
+                        var object = jQuery.parseJSON(event.data);
+
+                        if (object.action == "send") {
+                            var sender = object.params.name;
+                            var message = object.params.message;
+                            var ta = document.getElementById('responseText');
+                            ta.value = ta.value + '\n' + sender + ": " + message
+                        }
+
+
+                    }
+                    $('#chatBtn').prop("disabled", false)
+                }
+            }
+
+
+        };
+
+        socket.onopen = function(event) { var ta = document.getElementById('responseText'); ta.value = "Web Socket opened!"; };
+
+        socket.onclose = function(event) { var ta = document.getElementById('responseText'); ta.value = ta.value + "Web Socket closed"; };
+
+    } else {
+        alert("Your browser does not support Web Sockets.");
+    }
+
+    function login(username) {
+
+        var objectStr = JSON.stringify({action: "login", params: {name: username}});
+
+        if (!window.WebSocket) { return; }
+        if (socket.readyState == WebSocket.OPEN) {
+            socket.send(objectStr);
+        } else {
+            alert("The socket is not open.");
+        }
+    }
+
+    function send(message) {
+
+        var objectStr = JSON.stringify({action: "send", params: {message: message}})
+        if (!window.WebSocket) { return; }
+        if (socket.readyState == WebSocket.OPEN) {
+            socket.send(objectStr);
+        } else {
+            alert("The socket is not open.");
+        }
+    }
+</script>
+<h1>Socko Web Socket Chat Example</h1>
+<form onsubmit="return false;">
+    <input type="text" name="username" value=""/>
+    <input type="button" value="Login" onclick="login(this.form.username.value)"/>
+</form>
+<form onsubmit="return false;">
+    <input type="text" name="message" value="Hello, World!"/>
+    <input id="chatBtn" disabled type="button" value="Chat" onclick="send(this.form.message.value)"/>
+
+    <h3>Output</h3>
+    <textarea id="responseText" style="width: 500px; height:300px;"></textarea>
+</form>
+</body>
+</html>

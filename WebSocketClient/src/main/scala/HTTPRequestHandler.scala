@@ -1,37 +1,53 @@
-import akka.actor.{ActorLogging, Actor}
-import java.text.SimpleDateFormat
-import java.util.GregorianCalendar
-import org.mashupbots.socko.events.{WebSocketFrameEvent, HttpRequestEvent}
+import org.mashupbots.socko.events.HttpRequestEvent
+import akka.actor.Actor
+import akka.event.Logging
 
-class RequestHandler extends Actor with ActorLogging {
+/**
+ * Web Socket processor for chatting
+ */
+class HTTPRequestHandler extends Actor {
+  val log = Logging(context.system, this)
 
-  override def receive: Receive = {
+  /**
+   * Process incoming events
+   */
+  def receive: Receive =  {
+    case event: HttpRequestEvent =>
+      // return login HTML page to setup web sockets in the browser
+      val htmlText = buildLoginPageHTML()
+      writeHTML(event, htmlText)
+      context.stop(self)
 
-    case request: HttpRequestEvent => {
+    /*
+    case event: HttpRequestEvent =>
       // Return the HTML page to setup web sockets in the browser
-      writeHTML(request)
+      val htmlText = buildChatPageHTML()
+      writeHTML(event, htmlText)
       context.stop(self)
-    }
+    */
 
-    case event: WebSocketFrameEvent =>
-      // Echo web socket text frames
-      writeWebSocketResponse(event)
-      context.stop(self)
-
-    case _ => {
+    case _ =>
       log.info("received unknown message of type: ")
       context.stop(self)
-    }
+
   }
 
-  private def writeHTML(ctx: HttpRequestEvent) {
+  /**
+   * Write HTML page to setup a web socket on the browser
+   */
+  private def writeHTML(ctx: HttpRequestEvent, htmlText: String) {
     // Send 100 continue if required
     if (ctx.request.is100ContinueExpected) {
       ctx.response.write100Continue()
     }
 
+    ctx.response.write(htmlText, "text/html; charset=UTF-8")
+  }
+
+  /*
+  private def buildChatPageHTML(): String = {
     val buf = new StringBuilder()
-    buf.append("<html><head><title>Client Chat Application Using Socko with Web Sockets</title></head>\n")
+    buf.append("<html><head><title>Socko Web Socket Example</title></head>\n")
     buf.append("<body>\n")
     buf.append("<script type=\"text/javascript\">\n")
     buf.append(" var socket;\n")
@@ -56,7 +72,7 @@ class RequestHandler extends Actor with ActorLogging {
     buf.append(" }\n")
     buf.append(" }\n")
     buf.append("</script>\n")
-    buf.append("<h1>Client Chat Application Using Socko with Web Sockets</h1>\n")
+    buf.append("<h1>Socko Web Socket Chat Example</h1>\n")
     buf.append("<form onsubmit=\"return false;\">\n")
     buf.append(" <input type=\"text\" name=\"message\" value=\"Hello, World!\"/>\n")
     buf.append(" <input type=\"button\" value=\"Chat\" onclick=\"send(this.form.message.value)\" />\n")
@@ -67,17 +83,17 @@ class RequestHandler extends Actor with ActorLogging {
     buf.append("</body>\n")
     buf.append("</html>\n")
 
-    ctx.response.write(buf.toString, "text/html; charset=UTF-8")
+    buf.toString()
+  }
+  */
+
+  private def buildLoginPageHTML(): String = {
+    val source = scala.io.Source.fromFile("assets/index.html")
+    val lines = source.mkString
+    source.close()
+    lines
+
   }
 
-  private def writeWebSocketResponse(request: WebSocketFrameEvent) {
 
-    log.info("TextWebSocketFrame: " + request.readText)
-
-    val dateFormatter = new SimpleDateFormat("HH:mm:ss")
-    val time = new GregorianCalendar()
-    val ts = dateFormatter.format(time.getTime())
-
-    WebSocketClientApp.webServer.webSocketConnections.writeText(ts + " " + request.readText)
-  }
 }

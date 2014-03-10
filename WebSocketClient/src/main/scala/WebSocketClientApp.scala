@@ -1,59 +1,86 @@
-import akka.actor.{Props, ActorSystem}
+import java.io._
+import java.net.Socket
+import org.mashupbots.socko.events.HttpResponseStatus
+import org.mashupbots.socko.infrastructure.Logger
 import org.mashupbots.socko.routes._
-import org.mashupbots.socko.webserver.{WebServerConfig, WebServer}
+import org.mashupbots.socko.webserver.WebServer
+import org.mashupbots.socko.webserver.WebServerConfig
+import akka.actor._
+import scala.Some
 import scala.Some
 
-object WebSocketClientApp {
+object WebSocketClientApp extends Logger {
 
-  // define actor system
-  val system = ActorSystem("system")
+  val host = "localhost"
+  val port = 4567
 
-  // define routes
-  def routes = Routes({
+  val socket = new Socket(host, port)
 
-    case HttpRequest(request) => request match {
+  val out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream))
+  val in = new DataInputStream(new BufferedInputStream(socket.getInputStream))
+  val stdIn = new BufferedReader(new InputStreamReader(System.in))
 
+  val actorSystem = ActorSystem("ChatExampleActorSystem")
+
+  actorSystem.actorOf(Props(new SocketListener(in)), name=s"socketListener") ! ListenForChatMessages
+
+  val routes = Routes({
+
+    case HttpRequest(httpRequest) => httpRequest match {
       case GET(Path("/")) =>
+        // Return HTML page to establish web socket
+        actorSystem.actorOf(Props[HTTPRequestHandler]) ! httpRequest
 
-        system.actorOf(Props[RequestHandler]) ! request
+      case _ =>
+        // If favicon.ico, just return a 404 because we don't have that file
+        httpRequest.response.write(HttpResponseStatus.NOT_FOUND)
 
     }
 
     case WebSocketHandshake(wsHandshake) => wsHandshake match {
-      case Path("/websocket/") => {
-        // Authorize the handshake before starting Web socket processing.
+      case Path("/websocket/") =>
+
         wsHandshake.authorize(
           onComplete = Some(onWebSocketHandshakeComplete),
           onClose = Some(onWebSocketClose))
-      }
+
+      //webSocketRequestHandler ! Push("foo")
     }
 
-    case WebSocketFrame(wsFrame) => {
-      // Once handshaking has taken place, we can now process frames sent from the client
-      system.actorOf(Props[RequestHandler]) ! wsFrame
-    }
+    case WebSocketFrame(wsFrame) =>
+
+      log.info("got WebSocketFrame "+ wsFrame)
+
+      val webSocketId = wsFrame.webSocketId
+      val wsrh = actorSystem.actorSelection(s"user/socketRequestHandler$webSocketId")
+
+      log.info("found WebSocketRequestHandler: "+ wsrh)
+      wsrh ! wsFrame
+
+
   })
 
-  // create web server
-  val webServer = new WebServer(WebServerConfig(), routes, system)
+  val webServer = new WebServer(WebServerConfig(), routes, actorSystem)
 
-
-  // start (and stop) Socko web server
   def main(args: Array[String]) {
     Runtime.getRuntime.addShutdownHook(new Thread {
       override def run() { webServer.stop() }
     })
     webServer.start()
 
-    System.out.println("Open a few browsers and navigate to http://localhost:8888. Start chatting!")
+    System.out.println("Open a few browsers and navigate to http://localhost:8888/. Start chatting!")
   }
 
   def onWebSocketHandshakeComplete(webSocketId: String) {
+    //val webSocketId = wsHandshake.webSocketId
+    actorSystem.actorOf(Props(new WebSocketRequestHandler(webSocketId)), name=s"socketRequestHandler$webSocketId")
+    //actorSystem.actorOf(Props[SocketListener], name=s"socketListener$webSocketId")
     System.out.println(s"Web Socket $webSocketId connected")
   }
 
   def onWebSocketClose(webSocketId: String) {
     System.out.println(s"Web Socket $webSocketId closed")
+    actorSystem.actorSelection(s"user/$webSocketId") ! PoisonPill
   }
 
 }
