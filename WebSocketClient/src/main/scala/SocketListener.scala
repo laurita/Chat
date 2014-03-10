@@ -33,9 +33,6 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
 
         val senderName = byteArrayToString(senderBytes)
         val message = byteArrayToString(bytes)
-        //println(s"$senderName: $message")
-
-        //webSocketRequestHandler ! Push("foo")
         val map = Map[String, Any]("action" -> "send", "params" -> Map[String, Any]("name" -> senderName, "message" -> message))
         val jsonStr = JSONObject(map).toString()
         WebSocketClientApp.webServer.webSocketConnections.writeText(jsonStr)

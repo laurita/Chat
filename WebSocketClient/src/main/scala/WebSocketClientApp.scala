@@ -43,8 +43,6 @@ object WebSocketClientApp extends Logger {
         wsHandshake.authorize(
           onComplete = Some(onWebSocketHandshakeComplete),
           onClose = Some(onWebSocketClose))
-
-      //webSocketRequestHandler ! Push("foo")
     }
 
     case WebSocketFrame(wsFrame) =>
@@ -72,9 +70,7 @@ object WebSocketClientApp extends Logger {
   }
 
   def onWebSocketHandshakeComplete(webSocketId: String) {
-    //val webSocketId = wsHandshake.webSocketId
     actorSystem.actorOf(Props(new WebSocketRequestHandler(webSocketId)), name=s"socketRequestHandler$webSocketId")
-    //actorSystem.actorOf(Props[SocketListener], name=s"socketListener$webSocketId")
     System.out.println(s"Web Socket $webSocketId connected")
   }
 

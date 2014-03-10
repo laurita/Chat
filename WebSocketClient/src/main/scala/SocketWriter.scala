@@ -82,15 +82,8 @@ class SocketWriter extends Actor with ActorLogging {
           log.info("msgByteArray: "+ msgByteArray)
           msgByteArray
         case 3 =>
-          //val username = params.get("name").get.asInstanceOf[String]
-          //log.info("username: "+ username)
           val message = params.get("message").get.asInstanceOf[String]
           log.info("message: "+ message)
-          /*
-          val msgByteArray =
-            Array(command) ++ intToByteArray(username.length) ++ username.getBytes("UTF-8") ++
-            intToByteArray(message.length) ++ message.getBytes("UTF-8")
-          */
           val msgByteArray =
             Array(command) ++ intToByteArray(message.length) ++ message.getBytes("UTF-8")
           msgByteArray

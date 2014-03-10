@@ -10,9 +10,6 @@ import akka.util.Timeout
 
 case class Push(text: String)
 
-/**
- * Web Socket processor for chatting
- */
 class WebSocketRequestHandler(webSocketId: String) extends Actor with ActorLogging {
 
   log.info("WebSocketRequestHandler created")
@@ -49,49 +46,14 @@ class WebSocketRequestHandler(webSocketId: String) extends Actor with ActorLoggi
 
   def loggedIn(username: String): Receive = {
 
-    /*
-    case Push(text) =>
-      log.info("Push")
-      pushTwice(webSocketId, text)
-    */
-
     case event: WebSocketFrameEvent =>
       // TODO: send to backend server
       // get JSON from response data
       val jsonStr = event.readText()
 
-      // create new JSON String that contains username
-      /*
-      val json: Option[Any] = JSON.parseFull(jsonStr)
-      val map: Map[String,Any] = json.get.asInstanceOf[Map[String, Any]]
-      val params = map.get("params").get.asInstanceOf[Map[String, Any]]
-      val newMap = map + ("params" -> (params + ("name" -> username)))
-      log.info("newMap with username: "+ newMap)
-      val newJSON = new JSONObject(newMap)
-      val newJSONStr = newJSON.toString()
-      */
-      // send JSON String with username to socket writer
-      //context.system.actorOf(Props[SocketWriter]) ! ChatMessage(newJSONStr)
-
       context.system.actorOf(Props[SocketWriter]) ! ChatMessage(jsonStr)
-    // Echo web socket text frames
-    //writeWebSocketResponse(event)
-    //context.stop(self)
   }
 
-  /**
-   * push messages every second
-   */
-  /*
-  private def pushTwice(webSocketId: String, text: String) {
-    val cancellable = context.system.scheduler.schedule(0 milliseconds,
-      50 milliseconds)(ChatApp.webServer.webSocketConnections.writeText(text, webSocketId))
-  }
-  */
-
-  /**
-   * Echo the details of the web socket frame that we just received; but in upper case.
-   */
   def writeWebSocketResponse(event: WebSocketFrameEvent) {
     log.info("TextWebSocketFrame: " + event.readText)
 
@@ -100,20 +62,6 @@ class WebSocketRequestHandler(webSocketId: String) extends Actor with ActorLoggi
     val ts = dateFormatter.format(time.getTime)
 
     WebSocketClientApp.webServer.webSocketConnections.writeText(ts + " " + event.readText)
-  }
-
-  private def getUsernameFromJSON(event: WebSocketFrameEvent): String = {
-    val username: String = try {
-      val jsonString = event.readText()
-      val json: Option[Any] = JSON.parseFull(jsonString)
-      val map: Map[String,Any] = json.get.asInstanceOf[Map[String, Any]]
-      map.get("username").toString
-    } catch {
-      case e: Exception =>
-        e.printStackTrace()
-        throw e
-    }
-    username
   }
 
 }

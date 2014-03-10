@@ -74,8 +74,9 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
       log.info(s"client $this got UserCreated($name)")
       context.become(loggedIn(name))
 
-      log.info("sending answer")
+
       val ats = Array[Byte](cmd, 0.toByte)
+      log.info("sending answer "+ ats.toList)
       out.write(ats)
       out.flush()
 
