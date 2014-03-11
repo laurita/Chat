@@ -44,7 +44,7 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
   def notLoggedIn: Receive = {
 
     case Parse(command, message) =>
-      log.info(s"got Parse($command, $message) when notLoggedIn")
+      log.info(s"got Parse($command, "+ message.toList +") when notLoggedIn")
 
       command match {
         // login
@@ -81,7 +81,7 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
   def loggedIn(name: String): Receive = {
 
     case Parse(command, message) =>
-      log.info("got message Parse($command, "+ message.toList +")")
+      log.info(s"got message Parse($command, "+ message.toList +")")
 
       command match {
         // login

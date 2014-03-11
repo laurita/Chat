@@ -3,8 +3,8 @@ package main.scala
 import java.net._
 import java.io._
 import akka.actor.{Props, ActorSystem}
-import main.scala.actors.{Server}
-import main.scala.messages.Messages.{CreateActor}
+import main.scala.actors.Server
+import main.scala.messages.Messages.CreateActor
 
 object ChatServerApp extends App {
 
@@ -32,25 +32,22 @@ object ChatServerApp extends App {
     }
 
   } catch {
-    case e: IOException => {
+    case e: IOException =>
       println(
         s"Exception caught when trying to listen on port $portNumber or listening for a connection")
       println(e.getMessage)
       e.printStackTrace()
-    }
   }
 
+  // closes given sockets
   def closeAll(clientSocket: Socket, serverSocket: ServerSocket) {
     try {
       clientSocket.close()
       serverSocket.close()
       println("Trying to close sockets...")
     } catch {
-      case e: IOException => {
+      case e: IOException =>
         println("Unable to close sockets")
-      }
     }
   }
-
-
 }
