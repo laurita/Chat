@@ -1,4 +1,4 @@
-import akka.actor.{ActorLogging, Actor}
+import akka.actor.{ActorRef, ActorLogging, Actor}
 import scala.util.parsing.json.JSON
 
 class Message()
@@ -19,27 +19,10 @@ class SocketWriter extends Actor with ActorLogging {
       if (!byteArray.isEmpty) {
         out.write(byteArray)
         out.flush()
+        log.info("flushed byte array "+ byteArray.toList +" through socket")
       }
 
-      while (in.available() == 0) {}
-
-      val atsByteArray = new Array[Byte](2)
-      in.read(atsByteArray)
-
-      val cmd = atsByteArray(0)
-      val error = atsByteArray(1)
-
-      (cmd, error) match {
-        // successful login
-        case (1, 0) =>
-          sender ! true
-
-        // unsuccessful login
-        case (1, 1) =>
-          sender ! false
-
-
-      }
+      context.system.actorSelection("user/socketListener") ! ListenForLoginConfirmation(sender)
 
     case ChatMessage(jsonStr) =>
       log.info("SocketWriter got "+ jsonStr)

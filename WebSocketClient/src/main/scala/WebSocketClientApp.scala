@@ -18,11 +18,9 @@ object WebSocketClientApp extends Logger {
 
   val out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream))
   val in = new DataInputStream(new BufferedInputStream(socket.getInputStream))
-  val stdIn = new BufferedReader(new InputStreamReader(System.in))
 
   val actorSystem = ActorSystem("ChatExampleActorSystem")
-
-  actorSystem.actorOf(Props(new SocketListener(in)), name=s"socketListener") ! ListenForChatMessages
+  actorSystem.actorOf(Props(new SocketListener(in)), name=s"socketListener") //! ListenForChatMessages
 
   val routes = Routes({
 

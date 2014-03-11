@@ -1,4 +1,4 @@
-import akka.actor.{Props, ActorLogging, Actor}
+import akka.actor.{ActorRef, Props, ActorLogging, Actor}
 import java.io.DataInputStream
 import scala.util.parsing.json.JSONObject
 
@@ -7,6 +7,8 @@ object SocketListener {
 }
 
 case object ListenForChatMessages
+case class ListenForLoginConfirmation(replyTo: ActorRef)
+case class LoginConfirmed(yes: Boolean)
 
 class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
 
@@ -15,6 +17,37 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
   def receive = started()
 
   def started(): Receive = {
+
+    case ListenForLoginConfirmation(replyTo) =>
+
+
+      if (in.available() != 0) {
+
+        log.info("in available !!!")
+        val atsByteArray = new Array[Byte](2)
+        in.read(atsByteArray)
+
+        val cmd = atsByteArray(0)
+        val error = atsByteArray(1)
+
+        log.info("in ListenForLoginConfirmation got input through socket "+ atsByteArray.toList)
+
+        (cmd, error) match {
+          // successful login
+          case (1, 0) =>
+            replyTo ! LoginConfirmed(true)
+            context.become(loginConfirmed())
+            self ! ListenForChatMessages
+
+          // unsuccessful login
+          case (1, 1) =>
+            replyTo ! LoginConfirmed(false)
+        }
+      }
+      self ! ListenForLoginConfirmation
+  }
+
+  def loginConfirmed(): Receive = {
 
     case ListenForChatMessages => {
       //log.info("got ListenForChatMessages")

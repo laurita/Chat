@@ -15,13 +15,15 @@
 
         socket.onmessage = function(event) {
             var object = jQuery.parseJSON(event.data);
+            console.log(event.data);
             if (object.action == "login") {
                 var loggedIn = object.params.success;
                 if (loggedIn) {
                     var ta = document.getElementById('responseText');
                     ta.value = ta.value + '\n' + "You are logged in!"
                     socket.onmessage = function(ev) {
-                        var object = jQuery.parseJSON(event.data);
+                        var object = jQuery.parseJSON(ev.data);
+                        console.log(ev.data, object, "weird");
 
                         if (object.action == "send") {
                             var sender = object.params.name;
