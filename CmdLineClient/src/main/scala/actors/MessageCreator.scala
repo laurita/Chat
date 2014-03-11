@@ -13,6 +13,7 @@ class MessageCreator extends Actor with ActorLogging {
   )
 
   def receive: Receive = {
+
     case CreateMessage(command, message) => {
       log.info(s"got CreateMessage($command, $message)")
 

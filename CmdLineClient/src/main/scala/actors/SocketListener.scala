@@ -40,7 +40,6 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
           // login
           case 1 =>
             val cl = context.system.actorSelection("user/mainActor/consoleListener")
-
             val username = byteArrayToString(byteArray.slice(5, byteArray.length))
             val user = context.system.actorOf(Props[User], name= username)
 
@@ -55,7 +54,7 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
             context.system.shutdown()
 
           case c =>
-            log.info("unknown command")
+            log.info(s"unknown command $c")
         }
       }
 
@@ -87,7 +86,6 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
     case m =>
       log.info(s"got unknown message $m in waitingForChatMessages mode")
   }
-
 
   // reads 4 bytes from given input stream to get length N of message
   // returns next N bytes (message)

@@ -1,45 +1,38 @@
 package actors
 
-import akka.actor.{ActorLogging, ActorRef, Actor}
-import helpers.Messages
-import Messages.{ListenForChatMessages, WriteToSocket, WaitForACK, MessageWithByteArray}
+import akka.actor.{ActorLogging, Actor}
+import helpers.Messages._
 import java.io.DataOutputStream
-import akka.util.Timeout
-import scala.concurrent.duration._
-import scala.concurrent.Await
 
 class SocketWriter(out: DataOutputStream) extends Actor with ActorLogging {
 
   def receive: Receive = {
-    case MessageWithByteArray(byteArray) => {
-      val lst = byteArray.toList
-      log.info(s"SocketWriter received MessageWithByteArray($lst)")
+
+    case MessageWithByteArray(byteArray) =>
+      log.info(s"SocketWriter received MessageWithByteArray("+ byteArray.toList +")")
 
       val sl = context.system.actorSelection("user/mainActor/socketListener")
 
       out.write(byteArray)
       out.flush()
 
-      val cmd = lst.head
+      val cmd = byteArray(0)
 
       cmd match {
         // login
-        case 1 => {
+        case 1 =>
               sl ! WaitForACK(byteArray)
-        }
+
         // send
-        case 3 => {
+        case 3 =>
           sl ! ListenForChatMessages
-        }
 
         // logout
-        case 4 => {
+        case 4 =>
           log.info(s"SocketWriter matched $cmd")
           log.info(s"SocketListener is: $sl")
           sl ! WaitForACK(byteArray)
-        }
       }
-    }
   }
 
 }
