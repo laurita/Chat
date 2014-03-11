@@ -1,7 +1,7 @@
-package main.scala.actors
-
 import akka.actor._
-import main.scala.messages.Messages._
+import Messages._
+import Parsing._
+import ChatServerApp._
 import java.io.DataOutputStream
 
 object Server {
@@ -9,13 +9,6 @@ object Server {
 }
 
 class Server extends Actor with ActorLogging {
-
-  val commandCodes = Map(
-    "login" -> 1.toByte,
-    "send" -> 3.toByte,
-    "logout" -> 4.toByte,
-    "receive" -> 5.toByte
-  )
 
   case class LoggedInUsers(usrList: List[ActorRef]) {
 
@@ -91,31 +84,5 @@ class Server extends Actor with ActorLogging {
 
     case m =>
       log.info(s"got unknown message: $m")
-  }
-
-  private def byteArrayToString(byteArray: Array[Byte]): String = {
-    byteArray.toList.map(x => x.toChar).mkString
-  }
-
-  private def intToByteArray(x: Int): Array[Byte] = {
-
-    val binaryStr = x.toBinaryString
-    val pad = "0" * (32 - binaryStr.length)
-
-    val fullBinStr = pad + binaryStr
-
-    splitToStringsOfLen(fullBinStr, 8).map(x => Integer.parseInt(x, 2).toByte).toArray
-  }
-
-  private def splitToStringsOfLen(str: String, len: Int): List[String] = {
-    def rec(str: String, acc: List[String]): List[String] = {
-      str match {
-        case "" => acc
-        case string =>
-          val tpl = string.splitAt(string.length - len)
-          rec(tpl._1, tpl._2 :: acc)
-      }
-    }
-    rec(str, List())
   }
 }

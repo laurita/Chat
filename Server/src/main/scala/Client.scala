@@ -1,28 +1,15 @@
-package main.scala.actors
-
 import akka.actor.{ActorLogging, Actor}
-import main.scala.messages.Messages._
+import Messages._
+import Parsing._
 import java.net.Socket
 import java.io.{BufferedInputStream, DataInputStream, BufferedOutputStream, DataOutputStream}
-import main.scala.messages.Messages.ForwardAll
-import main.scala.messages.Messages.Message
-import main.scala.messages.Messages.Parse
 
 object Client{
 
 }
 
 class Client(clientSocket: Socket) extends Actor with ActorLogging {
-
   log.info("created")
-
-  // map from command strings to codes in bytes
-  val commandCodes = Map(
-    "login" -> 1.toByte,
-    "send" -> 3.toByte,
-    "logout" -> 4.toByte,
-    "receive" -> 5.toByte
-  )
 
   // create data input and output streams on socket waiting for login connections
   val out = new DataOutputStream(new BufferedOutputStream(clientSocket.getOutputStream))
@@ -76,6 +63,11 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
       val ats = Array[Byte](cmd, 1.toByte)
       out.write(ats)
       out.flush()
+
+    // unknown
+    case m =>
+      log.info(s"got unknown message $m")
+
   }
 
   def loggedIn(name: String): Receive = {
@@ -99,6 +91,10 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
           log.info(s"sends Server Logout($name)")
           context.system.actorSelection("user/server") ! Logout(name, out)
           context.become(notLoggedIn)
+
+        // unknown
+        case c =>
+          log.info(s"unknown command $c")
       }
 
     case Listen =>
@@ -114,17 +110,10 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
       // send to backend through TCP socket
       out.write(bytes)
       out.flush()
-  }
 
-  //-------------------------------------- HELPERS -------------------------------------------------------------------//
-
-  // converts integer to 8 bit string
-  private def toBinary(i: Int, digits: Int = 8) =
-    String.format("%" + digits + "s", i.toBinaryString).replace(' ', '0')
-
-  // makes string from array of bytes
-  private def byteArrayToString(byteArray: Array[Byte]): String = {
-    byteArray.toList.map(x => x.toChar).mkString
+    // unknown
+    case m =>
+      log.info(s"got unknown message $m")
   }
 
   // reads 4 bytes from given input stream to get length N of loginName

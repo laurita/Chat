@@ -1,10 +1,7 @@
-package main.scala
-
 import java.net._
 import java.io._
 import akka.actor.{Props, ActorSystem}
-import main.scala.actors.Server
-import main.scala.messages.Messages.CreateActor
+import Messages.CreateActor
 
 object ChatServerApp extends App {
 
@@ -12,6 +9,14 @@ object ChatServerApp extends App {
     println("Usage: java ChatServerApp <port number>")
     System.exit(1)
   }
+
+  // map from command strings to codes in bytes
+  val commandCodes = Map(
+    "login" -> 1.toByte,
+    "send" -> 3.toByte,
+    "logout" -> 4.toByte,
+    "receive" -> 5.toByte
+  )
 
   val portNumber = args(0)
   val Success: Byte = 0

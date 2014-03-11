@@ -1,5 +1,3 @@
-package main.scala.messages
-
 import java.net.Socket
 import java.io.DataOutputStream
 
