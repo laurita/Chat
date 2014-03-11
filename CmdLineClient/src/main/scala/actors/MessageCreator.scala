@@ -14,7 +14,7 @@ class MessageCreator extends Actor with ActorLogging {
 
   def receive: Receive = {
 
-    case CreateMessage(command, message) => {
+    case CreateMessage(command, message) =>
       log.info(s"got CreateMessage($command, $message)")
 
       val socketWriter = context.system.actorSelection("user/mainActor/socketWriter")
@@ -22,7 +22,9 @@ class MessageCreator extends Actor with ActorLogging {
         Array(commandCodes(command)) ++ intToByteArray(message.length) ++ message.getBytes("UTF-8")
 
       socketWriter ! MessageWithByteArray(msgByteArray)
-    }
+
+    case m =>
+      log.info(s"got unknown message $m")
   }
 
 }

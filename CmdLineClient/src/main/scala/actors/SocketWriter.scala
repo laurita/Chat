@@ -32,6 +32,10 @@ class SocketWriter(out: DataOutputStream) extends Actor with ActorLogging {
           log.info(s"SocketWriter matched $cmd")
           log.info(s"SocketListener is: $sl")
           sl ! WaitForACK(byteArray)
+
+        // unknown
+        case c =>
+          log.info(s"unknown command $c")
       }
   }
 

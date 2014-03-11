@@ -7,6 +7,7 @@ import java.io.BufferedReader
 class ConsoleListener(stdIn: BufferedReader) extends Actor with ActorLogging {
 
   def receive: Receive = {
+
     case ConsoleListen =>
       log.info("got ConsoleListen")
       context.become(consoleListening)
@@ -33,6 +34,9 @@ class ConsoleListener(stdIn: BufferedReader) extends Actor with ActorLogging {
           log.info(s"got unknown command $c from cmd line in consoleListening mode")
           self ! ConsoleListening
       }
+
+    case m =>
+      log.info(s"got unknown message $m in consoleListening mode")
   }
 
   def waitUsernameToLogin: Receive = {
