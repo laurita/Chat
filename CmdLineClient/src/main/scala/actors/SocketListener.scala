@@ -3,9 +3,7 @@ package actors
 import akka.actor.{Props, ActorLogging, Actor}
 import java.io.DataInputStream
 import messages.Messages._
-import messages.Messages.UserLoggedIn
-import messages.Messages.ACK
-import messages.Messages.WaitForACK
+
 
 object SocketListener {
   val Success: Byte = 0
@@ -17,31 +15,30 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
 
   def started(): Receive = {
 
-    case WaitForACK(bytes) => {
-      val lst = bytes.toList
-      log.info(s"SocketListener received WaitForACK($lst)")
-      val len = 2
-      val newByteArray = new Array[Byte](len)
-      in.read(newByteArray, 0, len)
+    case WaitForACK(bytes) =>
+      log.info(s"SocketListener received WaitForACK("+ bytes.toList +")")
+
+      val newByteArray = new Array[Byte](2)
+      in.read(newByteArray, 0, 2)
       context.become(waitForAck(bytes))
       self ! ACK(newByteArray)
-    }
 
-    case m => {
+    case m =>
       log.info(s"SocketListener got unknown message $m in started mode")
-    }
   }
 
   def waitForAck(byteArray: Array[Byte]): Receive = {
-    case ACK(newByteArray) => {
-      val lst = newByteArray.toList
-      log.info(s"SocketListener received ACK($lst)")
+
+    case ACK(newByteArray) =>
+      log.info(s"SocketListener received ACK("+ newByteArray.toList +")")
+
       val cmdByte = byteArray(0)
       val ackCmdByte = newByteArray(0)
       if (cmdByte == ackCmdByte && newByteArray(1) == SocketListener.Success) {
+
         cmdByte match {
           // login
-          case 1 => {
+          case 1 =>
             val cl = context.system.actorSelection("user/mainActor/consoleListener")
 
             val username = byteArrayToString(byteArray.slice(5, byteArray.length))
@@ -51,26 +48,22 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
 
             cl ! UserLoggedIn(user)
             context.become(waitingForChatMessages)
-          }
 
           // logout
-          case 4 => {
+          case 4 =>
             // stop the actor system
             context.system.shutdown()
-          }
         }
       }
 
-
-    }
-
-    case m => {
+    case m =>
       log.info(s"SocketListener got unknown message $m in waitForACK mode")
-    }
   }
 
   def waitingForChatMessages: Receive = {
-    case ListenForChatMessages => {
+
+    case ListenForChatMessages =>
+
       if (in.available() != 0) {
         val cmd = in.readByte()
         val senderLenBytes = new Array[Byte](4)
@@ -93,22 +86,17 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
       }
 
       self ! ListenForChatMessages
-    }
 
+    case WaitForACK(bytes) =>
+      log.info(s"SocketListener received WaitForACK("+ bytes.toList +")")
 
-    case WaitForACK(bytes) => {
-      val lst = bytes.toList
-      log.info(s"SocketListener received WaitForACK($lst)")
-      val len = 2
-      val newByteArray = new Array[Byte](len)
-      in.read(newByteArray, 0, len)
+      val newByteArray = new Array[Byte](2)
+      in.read(newByteArray, 0, 2)
       context.become(waitForAck(bytes))
       self ! ACK(newByteArray)
-    }
 
-    case m => {
+    case m =>
       log.info(s"SocketListener got unknown message $m in waitingForChatMessages mode")
-    }
   }
 
   private def byteArrayToString(byteArray: Array[Byte]): String = {
