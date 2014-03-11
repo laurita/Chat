@@ -11,9 +11,10 @@ object SocketListener {
 
 class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
 
-  def receive = started()
+  def receive = started
 
-  def started(): Receive = {
+  // state 0: waiting for message to start waiting for login ACK
+  def started: Receive = {
 
     case WaitForACK(bytes) =>
       log.info(s"got WaitForACK("+ bytes.toList +")")
@@ -27,6 +28,7 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
       log.info(s"got unknown message $m in started mode")
   }
 
+  // state 1: waiting for login ACK
   def waitForAck(byteArray: Array[Byte]): Receive = {
 
     case ACK(newByteArray) =>
@@ -62,12 +64,13 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
       log.info(s"got unknown message $m in waitForACK mode")
   }
 
+  // state 2: waiting for chat messages
   def waitingForChatMessages: Receive = {
 
     case ListenForChatMessages =>
 
       if (in.available() != 0) {
-        // the command byte
+        // command byte
         in.readByte()
         val senderName = byteArrayToString(readMessage(in))
         val message = byteArrayToString(readMessage(in))

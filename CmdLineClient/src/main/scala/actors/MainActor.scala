@@ -26,7 +26,8 @@ class MainActor(in: DataInputStream, out: DataOutputStream, stdIn: BufferedReade
     case _ => log.info("shouldn't receive any messages in started mode")
   }
 
-  def createActors() {
+  // creates all required actors
+  private def createActors() {
     context.actorOf(Props(new ConsoleListener(stdIn)), name="consoleListener")
     context.actorOf(Props(new SocketListener(in)), name="socketListener")
     context.actorOf(Props(new SocketWriter(out)), name="socketWriter")

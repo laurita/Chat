@@ -17,10 +17,12 @@ class MessageCreator extends Actor with ActorLogging {
     case CreateMessage(command, message) =>
       log.info(s"got CreateMessage($command, $message)")
 
+      // find socket writer
       val socketWriter = context.system.actorSelection("user/mainActor/socketWriter")
+      // create byte message
       val msgByteArray =
         Array(commandCodes(command)) ++ intToByteArray(message.length) ++ message.getBytes("UTF-8")
-
+      // send message to socket writer
       socketWriter ! MessageWithByteArray(msgByteArray)
 
     case m =>

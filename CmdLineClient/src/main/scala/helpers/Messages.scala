@@ -5,7 +5,7 @@ import akka.actor.ActorRef
 object Messages {
   case object MainStart
   case object ConsoleListen
-  case object ConsoleListening
+  case object ConsoleListeningForCommand
   case class Username(user: String)
   case class CreateMessage(command: String, username: String)
   case class UserLoggedIn(ar: ActorRef)
