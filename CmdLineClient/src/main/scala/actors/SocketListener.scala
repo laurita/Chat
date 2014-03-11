@@ -2,9 +2,8 @@ package actors
 
 import akka.actor.{Props, ActorLogging, Actor}
 import java.io.DataInputStream
-import helpers.Messages
-import Messages._
-
+import helpers.Messages._
+import helpers.Parsing._
 
 object SocketListener {
   val Success: Byte = 0
@@ -70,13 +69,9 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
 
       if (in.available() != 0) {
         val cmd = in.readByte()
-        if (cmd == 3.toByte) {
-          val senderName = byteArrayToString(readMessage(in))
-          val message = byteArrayToString(readMessage(in))
-          println(s"$senderName: $message")
-        } else {
-          log.info("wrong command")
-        }
+        val senderName = byteArrayToString(readMessage(in))
+        val message = byteArrayToString(readMessage(in))
+        println(s"$senderName: $message")
       }
       self ! ListenForChatMessages
 
@@ -92,12 +87,6 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
       log.info(s"got unknown message $m in waitingForChatMessages mode")
   }
 
-  private def byteArrayToString(byteArray: Array[Byte]): String = {
-    byteArray.toList.map(x => x.toChar).mkString
-  }
-
-  private def toBinary(i: Int, digits: Int = 8) =
-    String.format("%" + digits + "s", i.toBinaryString).replace(' ', '0')
 
   // reads 4 bytes from given input stream to get length N of message
   // returns next N bytes (message)
