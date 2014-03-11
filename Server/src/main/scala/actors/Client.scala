@@ -14,6 +14,8 @@ object Client{
 
 class Client(clientSocket: Socket) extends Actor with ActorLogging {
 
+  log.info("created")
+
   // map from command strings to codes in bytes
   val commandCodes = Map(
     "login" -> 1.toByte,
@@ -79,9 +81,8 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
   def loggedIn(name: String): Receive = {
 
     case Parse(command, message) =>
+      log.info("got message Parse($command, "+ message.toList +")")
 
-      val lst = message.toList
-      log.info(s"got message Parse($command, $lst)")
       command match {
         // login
         case 1 =>
