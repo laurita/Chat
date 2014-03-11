@@ -98,8 +98,8 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
   private def toBinary(i: Int, digits: Int = 8) =
     String.format("%" + digits + "s", i.toBinaryString).replace(' ', '0')
 
-  // reads 4 bytes from given input stream to get length N of loginName
-  // returns next N bytes (loginName)
+  // reads 4 bytes from given input stream to get length N of message
+  // returns next N bytes (message)
   private def readMessage(in: DataInputStream): Array[Byte] = {
     val lenBytes = new Array[Byte](4)
     in.read(lenBytes)

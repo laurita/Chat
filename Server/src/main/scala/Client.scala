@@ -116,8 +116,8 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
       log.info(s"got unknown message $m")
   }
 
-  // reads 4 bytes from given input stream to get length N of loginName
-  // returns next N bytes (loginName)
+  // reads 4 bytes from given input stream to get length N of message
+  // returns next N bytes (message)
   private def readMessage(in: DataInputStream): Array[Byte] = {
     val lenBytes = new Array[Byte](4)
     in.read(lenBytes)
