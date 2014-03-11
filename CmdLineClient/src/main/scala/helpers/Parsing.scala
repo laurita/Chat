@@ -20,10 +20,9 @@ object Parsing {
     def rec(str: String, acc: List[String]): List[String] = {
       str match {
         case "" => acc
-        case string => {
+        case string =>
           val tpl = string.splitAt(string.length - len)
           rec(tpl._1, tpl._2 :: acc)
-        }
       }
     }
     rec(str, List())

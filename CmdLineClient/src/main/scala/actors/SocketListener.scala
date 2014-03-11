@@ -68,7 +68,8 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
     case ListenForChatMessages =>
 
       if (in.available() != 0) {
-        val cmd = in.readByte()
+        // the command byte
+        in.readByte()
         val senderName = byteArrayToString(readMessage(in))
         val message = byteArrayToString(readMessage(in))
         println(s"$senderName: $message")
