@@ -53,6 +53,9 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
           case 4 =>
             // stop the actor system
             context.system.shutdown()
+
+          case c =>
+            log.info("unknown command")
         }
       }
 
@@ -66,12 +69,14 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
 
       if (in.available() != 0) {
         val cmd = in.readByte()
-
-        val senderName = byteArrayToString(readMessage(in))
-        val message = byteArrayToString(readMessage(in))
-        println(s"$senderName: $message")
+        if (cmd == 3.toByte) {
+          val senderName = byteArrayToString(readMessage(in))
+          val message = byteArrayToString(readMessage(in))
+          println(s"$senderName: $message")
+        } else {
+          log.info("wrong command")
+        }
       }
-
       self ! ListenForChatMessages
 
     case WaitForACK(bytes) =>
