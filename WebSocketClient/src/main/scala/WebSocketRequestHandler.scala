@@ -23,9 +23,9 @@ class WebSocketRequestHandler(webSocketId: String) extends Actor with ActorLoggi
       val jsonStr = event.readText()
 
       // login remotely, get response
-      implicit val timeout = Timeout(3.seconds)
+      implicit val timeout = Timeout(10.seconds)
       val successF = context.system.actorOf(Props[SocketWriter]) ? Login(jsonStr)
-      val success = Await.result(successF, 3 seconds).asInstanceOf[Boolean]
+      val success = Await.result(successF, 10 seconds).asInstanceOf[Boolean]
 
       // if OK, send response back to WebSocketRequestHandler
       if (success) {
@@ -39,6 +39,7 @@ class WebSocketRequestHandler(webSocketId: String) extends Actor with ActorLoggi
         // make json string for response to browser
         val jsonResString: String = "{\"action\":\"login\", \"params\": {\"success\":\"true\"}}"
         // respond to browser about success
+        // TODO:
         WebSocketClientApp.webServer.webSocketConnections.writeText(jsonResString, webSocketId)
       }
 

@@ -10,11 +10,14 @@ case object ListenForChatMessages
 
 class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
 
+  log.info("SocketListener created")
+
   def receive = started()
 
   def started(): Receive = {
 
     case ListenForChatMessages => {
+      //log.info("got ListenForChatMessages")
       if (in.available() != 0) {
         val cmd = in.readByte()
         val senderLenBytes = new Array[Byte](4)
@@ -33,16 +36,19 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
 
         val senderName = byteArrayToString(senderBytes)
         val message = byteArrayToString(bytes)
-        val map = Map[String, Any]("action" -> "send", "params" -> Map[String, Any]("name" -> senderName, "message" -> message))
-        val jsonStr = JSONObject(map).toString()
-        WebSocketClientApp.webServer.webSocketConnections.writeText(jsonStr)
+        val jsonObject = JSONObject(
+          Map[String, Any]("action" -> "send", "params" ->
+            JSONObject(Map[String, Any]("name" -> senderName, "message" -> message))))
 
+        val jsonStr = jsonObject.toString()
+        log.info("json string: "+ jsonStr)
+        log.info("web socket connections: "+ WebSocketClientApp.webServer.webSocketConnections)
+        WebSocketClientApp.webServer.webSocketConnections.writeText(jsonStr)
       }
 
       self ! ListenForChatMessages
     }
   }
-
 
   private def byteArrayToString(byteArray: Array[Byte]): String = {
     byteArray.toList.map(x => x.toChar).mkString
@@ -50,5 +56,4 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
 
   private def toBinary(i: Int, digits: Int = 8) =
     String.format("%" + digits + "s", i.toBinaryString).replace(' ', '0')
-
 }
