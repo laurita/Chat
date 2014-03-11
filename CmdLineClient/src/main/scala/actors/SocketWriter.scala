@@ -1,7 +1,8 @@
 package actors
 
 import akka.actor.{ActorLogging, ActorRef, Actor}
-import messages.Messages.{ListenForChatMessages, WriteToSocket, WaitForACK, MessageWithByteArray}
+import helpers.Messages
+import Messages.{ListenForChatMessages, WriteToSocket, WaitForACK, MessageWithByteArray}
 import java.io.DataOutputStream
 import akka.util.Timeout
 import scala.concurrent.duration._

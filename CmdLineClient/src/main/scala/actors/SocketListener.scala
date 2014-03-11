@@ -2,7 +2,8 @@ package actors
 
 import akka.actor.{Props, ActorLogging, Actor}
 import java.io.DataInputStream
-import messages.Messages._
+import helpers.Messages
+import Messages._
 
 
 object SocketListener {

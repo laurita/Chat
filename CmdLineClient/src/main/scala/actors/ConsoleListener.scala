@@ -1,14 +1,15 @@
 package actors
 
 import akka.actor.{ActorRef, ActorLogging, Actor}
-import messages.Messages._
+import helpers.Messages
+import Messages._
 import java.io.{InputStreamReader, BufferedReader}
 import akka.util.Timeout
 import scala.concurrent.duration._
 import scala.concurrent.Await
-import messages.Messages.UserLoggedIn
-import messages.Messages.ConsoleListening
-import messages.Messages.Username
+import Messages.UserLoggedIn
+import Messages.ConsoleListening
+import Messages.Username
 
 class ConsoleListener(stdIn: BufferedReader) extends Actor with ActorLogging {
 

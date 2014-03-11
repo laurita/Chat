@@ -1,7 +1,8 @@
 package actors
 
 import akka.actor.{ActorLogging, Props, Actor}
-import messages.Messages.{ConsoleListen, MainStart}
+import helpers.Messages
+import Messages.{ConsoleListen, MainStart}
 import java.io.{BufferedReader, DataOutputStream, DataInputStream}
 
 class MainActor(in: DataInputStream, out: DataOutputStream, stdIn: BufferedReader) extends Actor with ActorLogging {

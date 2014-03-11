@@ -1,8 +1,9 @@
 import actors.MainActor
 import akka.actor._
+import helpers.Messages
 import java.io._
 import java.net.Socket
-import messages.Messages.MainStart
+import Messages.MainStart
 
 object CmdLineClientApp {
 
