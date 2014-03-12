@@ -22,7 +22,6 @@ class TCPSocketHandler(in: DataInputStream, webSocketId: String) extends Actor w
 
       }
       self ! StartListen
-
   }
 
   // reads 4 bytes from given input stream to get length N of message
