@@ -14,14 +14,10 @@ object WebSocketClientApp extends Logger {
   val host = "localhost"
   val port = 4567
 
-  val socket = new Socket(host, port)
-
-  val out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream))
-  val in = new DataInputStream(new BufferedInputStream(socket.getInputStream))
-
+  // create akka actor system
   val actorSystem = ActorSystem("ChatExampleActorSystem")
-  actorSystem.actorOf(Props(new SocketListener(in)), name=s"socketListener") //! ListenForChatMessages
 
+  // create routes
   val routes = Routes({
 
     case HttpRequest(httpRequest) => httpRequest match {
@@ -44,16 +40,9 @@ object WebSocketClientApp extends Logger {
     }
 
     case WebSocketFrame(wsFrame) =>
-
-      log.info("got WebSocketFrame "+ wsFrame)
-
       val webSocketId = wsFrame.webSocketId
       val wsrh = actorSystem.actorSelection(s"user/socketRequestHandler$webSocketId")
-
-      log.info("found WebSocketRequestHandler: "+ wsrh)
       wsrh ! wsFrame
-
-
   })
 
   val webServer = new WebServer(WebServerConfig(), routes, actorSystem)
@@ -68,7 +57,13 @@ object WebSocketClientApp extends Logger {
   }
 
   def onWebSocketHandshakeComplete(webSocketId: String) {
-    actorSystem.actorOf(Props(new WebSocketRequestHandler(webSocketId)), name=s"socketRequestHandler$webSocketId")
+    // 1. open new TCP connection to backend
+    val socket = new Socket(host, port)
+    val out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream))
+    val in = new DataInputStream(new BufferedInputStream(socket.getInputStream))
+    // 2. create WebSocketRequestHandler and open new TCP socket
+    actorSystem.actorOf(Props(new WebSocketRequestHandler(webSocketId, in, out)),
+      name=s"socketRequestHandler$webSocketId")
     System.out.println(s"Web Socket $webSocketId connected")
   }
 
