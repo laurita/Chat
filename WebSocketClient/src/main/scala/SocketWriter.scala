@@ -17,12 +17,12 @@ class SocketWriter extends Actor with ActorLogging {
 
       log.info("made byte array "+ byteArray.toList)
       if (!byteArray.isEmpty) {
+
+        context.system.actorSelection("user/socketListener") ! ListenForLoginConfirmation(sender)
         out.write(byteArray)
         out.flush()
         log.info("flushed byte array "+ byteArray.toList +" through socket")
       }
-
-      context.system.actorSelection("user/socketListener") ! ListenForLoginConfirmation(sender)
 
     case ChatMessage(jsonStr) =>
       log.info("SocketWriter got "+ jsonStr)

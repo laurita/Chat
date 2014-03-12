@@ -56,6 +56,7 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
       val ats = Array[Byte](cmd, 0.toByte)
       out.write(ats)
       out.flush()
+      log.info("flushed "+ ats.toList)
       self ! Listen
 
     case UserExists =>

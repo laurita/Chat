@@ -20,7 +20,6 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
 
     case ListenForLoginConfirmation(replyTo) =>
 
-
       if (in.available() != 0) {
 
         log.info("in available !!!")
@@ -42,9 +41,13 @@ class SocketListener(in: DataInputStream) extends Actor with ActorLogging {
           // unsuccessful login
           case (1, 1) =>
             replyTo ! LoginConfirmed(false)
+
+          case c => log.info("what a confirmation is this???????")
         }
       }
-      self ! ListenForLoginConfirmation
+      self ! ListenForLoginConfirmation(replyTo)
+
+    case m => log.info(s"got unknown message $m")
   }
 
   def loginConfirmed(): Receive = {
