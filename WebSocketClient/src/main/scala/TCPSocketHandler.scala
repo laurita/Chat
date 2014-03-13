@@ -12,16 +12,39 @@ class TCPSocketHandler(in: DataInputStream, webSocketId: String) extends Actor w
 
         // action byte
         // TODO: check more later
-        in.readByte()
-        val username = byteArrayToString(readMessage(in))
-        val message = byteArrayToString(readMessage(in))
+        val cmd = in.readByte()
 
-        val jsonString = makeJSONString(username, message)
+        cmd match {
+          case 3 =>
+            val username = byteArrayToString(readMessage(in))
+            val message = byteArrayToString(readMessage(in))
+            val jsonString = makeJSONString(username, message)
+            WebSocketClientApp.webServer.webSocketConnections.writeText(jsonString ,webSocketId)
 
-        WebSocketClientApp.webServer.webSocketConnections.writeText(jsonString ,webSocketId)
+          case 4 =>
+            val error = in.readByte()
+            error match {
+              case 0 =>
+                val jsonString = "{\"action\" : \"logout\", \"params\" : {\"success\" : \"true\"} }"
+                WebSocketClientApp.webServer.webSocketConnections.writeText(jsonString ,webSocketId)
+            }
 
+          case 1 =>
+            val error = in.readByte()
+            error match {
+              case 0 =>
+                val jsonString = "{\"action\" : \"login\", \"params\" : {\"success\" : \"true\"} }"
+                WebSocketClientApp.webServer.webSocketConnections.writeText(jsonString ,webSocketId)
+            }
+
+          case c =>
+            log.info("what the hell is here???")
+        }
       }
       self ! StartListen
+
+    case m =>
+      log.info(s"unknown message $m")
   }
 
   // reads 4 bytes from given input stream to get length N of message

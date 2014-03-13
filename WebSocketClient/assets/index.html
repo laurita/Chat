@@ -5,81 +5,145 @@
 </head>
 <body>
 <script type="text/javascript">
-    var socket;
-    if (!window.WebSocket) {
-        window.WebSocket = window.MozWebSocket;
-    }
+var socket;
 
-    if (window.WebSocket) {
-        socket = new WebSocket("ws://localhost:8888/websocket/");
+$(function() {
+
+    function onLoginSuccess(ev) {
+        var ta = $('#responseText').val();
+        $('#responseText').val(ta + '\n' + "You are logged in!");
+        $('#loginBtn').prop('value', "Logout");
+        $('#loginBtn').prop('class', "logout");
 
         socket.onmessage = function(event) {
-            var object = jQuery.parseJSON(event.data);
-            console.log(event.data);
-            if (object.action == "login") {
-                var loggedIn = object.params.success;
-                if (loggedIn) {
-                    var ta = document.getElementById('responseText');
-                    ta.value = ta.value + '\n' + "You are logged in!"
-                    socket.onmessage = function(ev) {
-                        var object = jQuery.parseJSON(ev.data);
-                        console.log(ev.data, object, "weird");
+            handleSocketLogged(event);
+        }
 
-                        if (object.action == "send") {
-                            var sender = object.params.name;
-                            var message = object.params.message;
-                            var ta = document.getElementById('responseText');
-                            ta.value = ta.value + '\n' + sender + ": " + message
-                        }
+        $('#chatBtn').prop("disabled", false);
+    }
 
+    function onLogoutSuccess(ev) {
+        var ta = $('#responseText').val();
+        $('#responseText').val(ta + '\n' + "You are logged out!");
+        $('#loginBtn').prop('value', "Login");
+        $('#loginBtn').prop('class', "login");
 
-                    }
-                    $('#chatBtn').prop("disabled", false)
-                }
-            }
-
-
-        };
-
-        socket.onopen = function(event) { var ta = document.getElementById('responseText'); ta.value = "Web Socket opened!"; };
-
-        socket.onclose = function(event) { var ta = document.getElementById('responseText'); ta.value = ta.value + "Web Socket closed"; };
-
-    } else {
-        alert("Your browser does not support Web Sockets.");
+        socket.onmessage = function(ev) {
+            handleSocketNotLogged(ev);
+        }
+        $('#chatBtn').prop("disabled", true);
     }
 
     function login(username) {
+        var jsonStr = JSON.stringify({action: "login", params: {name: username}});
+        console.log("sent "+ jsonStr);
+        sendJSON(jsonStr);
+    }
 
-        var objectStr = JSON.stringify({action: "login", params: {name: username}});
-
-        if (!window.WebSocket) { return; }
-        if (socket.readyState == WebSocket.OPEN) {
-            socket.send(objectStr);
-        } else {
-            alert("The socket is not open.");
-        }
+    function logout(username) {
+        var jsonStr = JSON.stringify({action: "logout", params: {name: username}});
+        console.log("sent "+ jsonStr);
+        sendJSON(jsonStr);
     }
 
     function send(message) {
+        var jsonStr = JSON.stringify({action: "send", params: {message: message}})
+        console.log("sent "+ jsonStr);
+        sendJSON(jsonStr);
+    }
 
-        var objectStr = JSON.stringify({action: "send", params: {message: message}})
+    function sendJSON(jsonStr) {
         if (!window.WebSocket) { return; }
         if (socket.readyState == WebSocket.OPEN) {
-            socket.send(objectStr);
+            socket.send(jsonStr);
         } else {
             alert("The socket is not open.");
         }
     }
+
+    function handleLogin() {
+        $('#loginBtn').click(function() {
+            var username = $('form #username').val();
+            if ($('#loginBtn').prop('class') === "login") {
+                login(username);
+            } else {
+                logout(username);
+            }
+        });
+    }
+
+    function handleChat() {
+        $('#chatBtn').click(function() {
+            var message = $('form #message').val();
+            send(message);
+        });
+    }
+
+    function handleSocketNotLogged(ev) {
+        var object = jQuery.parseJSON(ev.data);
+        console.log(ev.data);
+        if (object.action === "login") {
+            var loggedIn = object.params.success;
+            if (loggedIn) {
+                onLoginSuccess();
+            }
+        }
+    }
+
+    function handleSocketLogged(ev) {
+        var object = jQuery.parseJSON(ev.data);
+        console.log(ev.data, object, "weird");
+
+        var action = object.action;
+        if (action === "send") {
+            var sender = object.params.name;
+            var message = object.params.message;
+            var ta = $('#responseText');
+            ta.val(ta.val() + '\n' + sender + ": " + message);
+        } else if (action === "logout") {
+           onLogoutSuccess();
+        }
+    }
+
+    function init() {
+
+        if (!window.WebSocket) {
+            window.WebSocket = window.MozWebSocket;
+        }
+
+        if (window.WebSocket) {
+            socket = new WebSocket("ws://localhost:8888/websocket/");
+
+            socket.onmessage = function(event) {
+                handleSocketNotLogged(event);
+            }
+
+            socket.onopen = function(event) {
+                $('#responseText').val("Web Socket opened!");
+            };
+
+            socket.onclose = function(event) {
+                var ta = $('#responseText').val();
+                $('#responseText').val(ta + "Web Socket closed");
+            };
+
+        } else {
+            alert("Your browser does not support Web Sockets.");
+        }
+        handleLogin();
+        handleChat();
+    }
+    init();
+});
 </script>
 <h1>Socko Web Socket Chat Example</h1>
 <form onsubmit="return false;">
-    <input type="text" name="username" value=""/>
-    <input type="button" value="Login" onclick="login(this.form.username.value)"/>
+    <input type="text" name="username" id="username" value=""/>
+    <input type="button" id="loginBtn" value="Login" class="login"/>
 </form>
 <form onsubmit="return false;">
-    <input type="text" name="message" value="Hello, World!"/>
-    <input id="chatBtn" disabled type="button" value="Chat" onclick="send(this.form.message.value)"/>
+    <input type="text" name="message" id="message" value="Hello, World!"/>
+    <input id="chatBtn" disabled type="button" value="Chat"/>
 
     <h3>Output</h3>
     <textarea id="responseText" style="width: 500px; height:300px;"></textarea>

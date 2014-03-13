@@ -64,6 +64,8 @@ object WebSocketClientApp extends Logger {
     // 2. create WebSocketRequestHandler and open new TCP socket
     actorSystem.actorOf(Props(new WebSocketRequestHandler(webSocketId, in, out)),
       name=s"socketRequestHandler$webSocketId")
+    actorSystem.actorOf(Props(new TCPSocketHandler(in, webSocketId)),
+      name=s"tcpSocketHandler$webSocketId")
     System.out.println(s"Web Socket $webSocketId connected")
   }
 

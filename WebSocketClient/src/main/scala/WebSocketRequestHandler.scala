@@ -13,7 +13,8 @@ class WebSocketRequestHandler(webSocketId: String, in: DataInputStream, out: Dat
 
   val commandCodes = Map[String, Byte](
     "login" -> 1,
-    "send" -> 3
+    "send" -> 3,
+    "logout" -> 4
   )
 
   override def receive = notLoggedIn
@@ -26,6 +27,7 @@ class WebSocketRequestHandler(webSocketId: String, in: DataInputStream, out: Dat
       val jsonStr = event.readText()
       val username = getNameFromJSON(jsonStr)
       val action = getActionFromJSON(jsonStr)
+      log.info(s"JSON is $jsonStr")
       // make byte array message to send through TCP socket
       val bytes = Array[Byte](commandCodes(action)) ++ makeByteMessageWithLengthPad(username)
       // change receive behavior to wait for confirmation
@@ -37,7 +39,7 @@ class WebSocketRequestHandler(webSocketId: String, in: DataInputStream, out: Dat
       log.info(s"flushed "+ bytes.toList)
 
     case m =>
-      log.info(s"got unknown message $m")
+      log.info(s"got unknown message $m in notLoggedIn mode")
   }
 
   def waitForLoginConfirmation(jsonStr: String): Receive = {
@@ -51,23 +53,37 @@ class WebSocketRequestHandler(webSocketId: String, in: DataInputStream, out: Dat
 
         (cmd, error) match {
 
-          // success
+          // login success
           case (1, 0) =>
             log.info(s"$jsonStr logged in successfully")
-            // create actor for listening TCP messages
-            context.actorOf(Props(new TCPSocketHandler(in, webSocketId)),
-              name=s"tcpSocketHandler$webSocketId") ! StartListen
-            // change receive behavior
+            // find actor for listening TCP messages
+            context.system.actorSelection(s"tcpSocketHandler$webSocketId") ! StartListen
             val name = getNameFromJSON(jsonStr)
             context.become(loggedIn(name))
             // make json string for response to browser
             val jsonResString: String = "{\"action\":\"login\", \"params\": {\"success\":\"true\"}}"
             // respond to browser about success
             WebSocketClientApp.webServer.webSocketConnections.writeText(jsonResString, webSocketId)
+            log.info(s"sent back to browser $jsonResString")
 
           // login failed
           case (1, 1) =>
             log.info(s"login failed for $jsonStr")
+
+          // logout success
+          case (4, 0) =>
+            log.info(s"logout success ($cmd, $error)")
+            // make json string for response to browser
+            val jsonResString: String = "{\"action\":\"logout\", \"params\": {\"success\":\"true\"}}"
+            // change receive behavior
+            context.become(notLoggedIn)
+            // respond to browser about success
+            WebSocketClientApp.webServer.webSocketConnections.writeText(jsonResString, webSocketId)
+            log.info(s"sent back to browser $jsonResString")
+
+          // logout failed
+          case (4, 1) =>
+            log.info(s"logout failure ($cmd, $error)")
 
           // unknown
           case c =>
@@ -77,9 +93,8 @@ class WebSocketRequestHandler(webSocketId: String, in: DataInputStream, out: Dat
         self ! ListenForConfirmationBytes
       }
 
-
     case m =>
-      log.info(s"got unknown message $m")
+      log.info(s"got unknown message $m in waitForLoginConfirmation mode")
   }
 
   def loggedIn(username: String): Receive = {
@@ -91,17 +106,32 @@ class WebSocketRequestHandler(webSocketId: String, in: DataInputStream, out: Dat
       val jsonStr = event.readText()
       // parse JSON
       val action = getActionFromJSON(jsonStr)
-      val message = getMessageFromJSON(jsonStr)
-      // create byte message
-      val messageBytes = makeByteMessageWithLengthPad(message)
-      val bytes = Array[Byte](commandCodes(action)) ++ messageBytes
-      // send to socket writer
-      out.write(bytes)
-      out.flush()
-      log.info(s"flushed message "+ bytes.toList)
+
+      action match {
+        case "logout" =>
+          val name = getNameFromJSON(jsonStr)
+          val nameBytes = makeByteMessageWithLengthPad(name)
+          val bytes = Array[Byte](commandCodes(action)) ++ nameBytes
+          context.become(waitForLoginConfirmation(jsonStr))
+          self ! ListenForConfirmationBytes
+          // send to socket writer
+          out.write(bytes)
+          out.flush()
+          log.info(s"flushed message "+ bytes.toList)
+
+        case "send" =>
+          val message = getMessageFromJSON(jsonStr)
+          val messageBytes = makeByteMessageWithLengthPad(message)
+          val bytes = Array[Byte](commandCodes(action)) ++ messageBytes
+          // send to socket writer
+          out.write(bytes)
+          out.flush()
+          log.info(s"flushed message "+ bytes.toList)
+
+      }
 
     case m =>
-      log.info(s"got unknown message $m")
+      log.info(s"got unknown message $m in logged in mode")
   }
 
   //------------------------------------------------------------------------------------------------------------------//

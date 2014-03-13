@@ -34,7 +34,7 @@ class Server extends Actor with ActorLogging {
       log.info("got CreateActor message")
 
       // create client actor, pass a newly opened socket
-      context.actorOf(Props(new Client(clientSocket)))
+      context.actorOf(Props(new Client(clientSocket))) ! WaitForLogin
 
     case Login(name) =>
       log.info(s"got Login($name)")
@@ -79,10 +79,11 @@ class Server extends Actor with ActorLogging {
       // write answer to socket
       out.write(ats)
       out.flush()
+      log.info(s"flushed message "+ ats.toList)
       // close the socket
-      out.close()
+      //out.close()
 
     case m =>
-      log.info(s"got unknown message: $m")
+      log.info(s"got unknown message: $m from $sender")
   }
 }

@@ -8,6 +8,8 @@ object Client{
 
 }
 
+case object WaitForLogin
+
 class Client(clientSocket: Socket) extends Actor with ActorLogging {
   log.info("created")
 
@@ -16,19 +18,25 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
   val in = new DataInputStream(
     new BufferedInputStream(clientSocket.getInputStream))
 
-  // get command and message in bytes
-  val cmd = in.readByte()
-  val loginName = readMessage(in)
-
-  // send a Parse message containing command and message to self
-  // self is in notLoggedIn mode
-  self ! Parse(cmd, loginName)
-
   // first, receive behavior is notLoggedIn
   override def receive: Receive = notLoggedIn
 
-
   def notLoggedIn: Receive = {
+
+    case WaitForLogin =>
+
+      if (in.available() != 0) {
+        // get command and message in bytes
+        val cmd = in.readByte()
+        val loginName = readMessage(in)
+
+        // send a Parse message containing command and message to self
+        // self is in notLoggedIn mode
+        self ! Parse(cmd, loginName)
+      } else {
+        self ! WaitForLogin
+      }
+
 
     case Parse(command, message) =>
       log.info(s"got Parse($command, "+ message.toList +") when notLoggedIn")
@@ -53,7 +61,7 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
       log.info(s"got UserCreated($name)")
       context.become(loggedIn(name))
       // error code 0 is when OK
-      val ats = Array[Byte](cmd, 0.toByte)
+      val ats = Array[Byte](1, 0.toByte)
       out.write(ats)
       out.flush()
       log.info("flushed "+ ats.toList)
@@ -61,20 +69,20 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
 
     case UserExists =>
       // error code 1 is when user exists
-      val ats = Array[Byte](cmd, 1.toByte)
+      val ats = Array[Byte](1, 1.toByte)
       out.write(ats)
       out.flush()
 
     // unknown
     case m =>
-      log.info(s"got unknown message $m")
+      log.info(s"got unknown message $m in notLoggedIn mode")
 
   }
 
   def loggedIn(name: String): Receive = {
 
     case Parse(command, message) =>
-      log.info(s"got message Parse($command, "+ message.toList +")")
+      log.info(s"got message Parse($command, "+ message.toList +") when loggedIn")
 
       command match {
         // login
@@ -90,8 +98,9 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
         // logout
         case 4 =>
           log.info(s"sends Server Logout($name)")
-          context.system.actorSelection("user/server") ! Logout(name, out)
           context.become(notLoggedIn)
+          self ! WaitForLogin
+          context.system.actorSelection("user/server") ! Logout(name, out)
 
         // unknown
         case c =>
@@ -114,7 +123,7 @@ class Client(clientSocket: Socket) extends Actor with ActorLogging {
 
     // unknown
     case m =>
-      log.info(s"got unknown message $m")
+      log.info(s"got unknown message $m in loggedIn mode")
   }
 
   // reads 4 bytes from given input stream to get length N of message
